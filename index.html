@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="el">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>UTH Football League 8x8</title>
+  <meta name="description" content="UTH Football League 8x8 — Τουρνουά ποδοσφαίρου 2026 στο Olympico Sports Club. Βαθμολογία, πρόγραμμα, αποτελέσματα, σκόρερ και ειδήσεις.">
+  <meta name="theme-color" content="#06307a">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Graduate&family=Roboto+Condensed:wght@500;700;800;900&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="#home" aria-label="Αρχική">
+      <span class="brand-mark">UTH</span>
+      <span class="brand-sub">Football League <b>8x8</b></span>
+    </a>
+    <button class="menu-btn" aria-label="Μενού" aria-expanded="false">☰</button>
+    <nav class="nav">
+      <a href="#standings">Βαθμολογία</a>
+      <a href="#fixtures">Πρόγραμμα</a>
+      <a href="#results">Αποτελέσματα</a>
+      <a href="#scorers">Σκόρερ</a>
+      <a href="#news">Ειδήσεις</a>
+      <a href="#teams">Ομάδες</a>
+      <a href="#info">Πληροφορίες</a>
+    </nav>
+  </header>
+
+  <div class="ticker" aria-label="Τελευταία αποτελέσματα"><div class="ticker-track" id="ticker"></div></div>
+
+  <main>
+    <!-- HERO -->
+    <section class="hero" id="home">
+      <div class="hero-art" aria-hidden="true"></div>
+      <div class="hero-inner">
+        <h1 class="title-uth">UTH</h1>
+        <p class="title-league">Football League 8x8</p>
+        <p class="title-greek"><span></span>Τουρνουά Ποδοσφαίρου<span></span></p>
+        <p class="title-year">2026</p>
+        <p class="venue">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a7 7 0 0 0-7 7c0 5.2 7 13 7 13s7-7.8 7-13a7 7 0 0 0-7-7zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5z"/></svg>
+          Olympico Sports Club
+        </p>
+
+        <div class="next-match" id="nextMatch"></div>
+
+        <div class="hero-stats" id="heroStats"></div>
+      </div>
+      <button class="ball" id="ball" aria-label="Κλώτσα την μπάλα!" title="Κλώτσα την μπάλα!">
+        <svg viewBox="0 0 100 100"><use href="#ball-svg"/></svg>
+      </button>
+    </section>
+
+    <!-- STANDINGS -->
+    <section class="block" id="standings">
+      <div class="block-head">
+        <h2>Βαθμολογία</h2>
+        <p class="block-note">Κανονική περίοδος · Οι 4 πρώτοι στο <b>Final Four</b></p>
+      </div>
+      <div class="card table-wrap">
+        <table class="table" id="standingsTable"></table>
+      </div>
+      <div class="legend"><span class="dot q"></span> Final Four <span class="form-chip W">Ν</span> Νίκη <span class="form-chip D">Ι</span> Ισοπαλία <span class="form-chip L">Η</span> Ήττα</div>
+    </section>
+
+    <!-- FIXTURES -->
+    <section class="block" id="fixtures">
+      <div class="block-head">
+        <h2>Επόμενα Ματς</h2>
+        <p class="block-note">Όλοι οι αγώνες στο Olympico Sports Club</p>
+      </div>
+      <div id="fixturesList"></div>
+    </section>
+
+    <!-- RESULTS -->
+    <section class="block" id="results">
+      <div class="block-head">
+        <h2>Αποτελέσματα</h2>
+        <div class="tabs" id="roundTabs" role="tablist"></div>
+      </div>
+      <div class="grid-2" id="resultsList"></div>
+    </section>
+
+    <!-- SCORERS + BRACKET -->
+    <section class="block split" id="scorers">
+      <div>
+        <div class="block-head"><h2>Σκόρερ</h2><p class="block-note">Χρυσό Παπούτσι</p></div>
+        <div class="card"><ol class="scorers" id="scorersList"></ol></div>
+      </div>
+      <div>
+        <div class="block-head"><h2>Final Four</h2><p class="block-note">Με βάση την τρέχουσα βαθμολογία</p></div>
+        <div class="card bracket" id="bracket"></div>
+      </div>
+    </section>
+
+    <!-- NEWS -->
+    <section class="block" id="news">
+      <div class="block-head"><h2>Ειδήσεις</h2><p class="block-note">Τα νέα των αγώνων</p></div>
+      <div class="news-grid" id="newsList"></div>
+    </section>
+
+    <!-- TEAMS -->
+    <section class="block" id="teams">
+      <div class="block-head"><h2>Ομάδες</h2><p class="block-note">Πάτα σε μια ομάδα για αναλυτικά</p></div>
+      <div class="teams-grid" id="teamsList"></div>
+    </section>
+
+    <!-- INFO -->
+    <section class="block split" id="info">
+      <div>
+        <div class="block-head"><h2>Πληροφορίες</h2><p class="block-note">Κανονισμοί τουρνουά</p></div>
+        <div class="card"><dl class="rules" id="rulesList"></dl></div>
+      </div>
+      <div>
+        <div class="block-head"><h2>Δήλωσε την ομάδα σου</h2></div>
+        <div class="card register">
+          <img src="assets/qr.jpg" alt="QR code δήλωσης ομάδας" width="180" height="180">
+          <p>Σκάναρε το QR ή πάτα το κουμπί για να δηλώσεις συμμετοχή.</p>
+          <a class="btn" id="registerBtn" href="#">Δήλωση συμμετοχής</a>
+          <p class="venue small">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a7 7 0 0 0-7 7c0 5.2 7 13 7 13s7-7.8 7-13a7 7 0 0 0-7-7zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5z"/></svg>
+            Olympico Sports Club
+          </p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <span class="brand-mark sm">UTH</span>
+    <p>UTH Football League 8x8 · 2026 · Olympico Sports Club</p>
+    <p class="draft">Προσχέδιο — τα δεδομένα είναι ενδεικτικά</p>
+  </footer>
+
+  <!-- Team dialog -->
+  <dialog class="team-dialog" id="teamDialog">
+    <button class="close" aria-label="Κλείσιμο" onclick="this.closest('dialog').close()">✕</button>
+    <div id="teamDialogBody"></div>
+  </dialog>
+
+  <!-- Ball sprite -->
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <symbol id="ball-svg" viewBox="0 0 100 100">
+      <circle cx="50" cy="50" r="47" fill="#f4f9ff" stroke="#0b2f6e" stroke-width="4"/>
+      <polygon points="50,30 66,42 60,61 40,61 34,42" fill="#0b2f6e"/>
+      <g stroke="#0b2f6e" stroke-width="4" fill="none" stroke-linejoin="round">
+        <path d="M50 30 L50 5"/><path d="M66 42 L90 33"/><path d="M60 61 L75 82"/><path d="M40 61 L25 82"/><path d="M34 42 L10 33"/>
+      </g>
+      <path d="M38 4 L50 5 L62 4 L58 12 L42 12Z" fill="#0b2f6e"/>
+      <path d="M90 33 L96 45 L93 55 L84 50 L85 38Z" fill="#0b2f6e"/>
+      <path d="M75 82 L82 88 L70 95 L64 88 L70 80Z" fill="#0b2f6e"/>
+      <path d="M25 82 L30 80 L36 88 L30 95 L18 88Z" fill="#0b2f6e"/>
+      <path d="M10 33 L15 38 L16 50 L7 55 L4 45Z" fill="#0b2f6e"/>
+    </symbol>
+  </svg>
+
+  <script src="data.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
