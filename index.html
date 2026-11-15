@@ -21,6 +21,7 @@
     <nav class="nav">
       <a href="#standings">Βαθμολογία</a>
       <a href="#fixtures">Πρόγραμμα</a>
+      <a href="#predict">Προγνωστικά</a>
       <a href="#results">Αποτελέσματα</a>
       <a href="#scorers">Σκόρερ</a>
       <a href="#news">Ειδήσεις</a>
@@ -73,6 +74,36 @@
         <p class="block-note">Όλοι οι αγώνες στο Olympico Sports Club</p>
       </div>
       <div id="fixturesList"></div>
+    </section>
+
+    <!-- PREDICTIONS -->
+    <section class="block" id="predict">
+      <div class="block-head">
+        <h2>Προγνωστικά</h2>
+        <p class="block-note">Παίξε χωρίς λεφτά — μόνο για τη δόξα 🏆</p>
+      </div>
+      <div class="pred-bar card">
+        <div class="pred-how">
+          <span><b>Πώς παίζεται:</b> διάλεξε <span class="k">1</span> <span class="k">X</span> <span class="k">2</span> ή γράψε ακριβές σκορ.</span>
+          <span class="pts-rule"><b>3 πόντοι</b> για ακριβές σκορ · <b>1 πόντος</b> για σωστό σημείο. Οι ψήφοι κλειδώνουν στη σέντρα.</span>
+          <small id="predMode"></small>
+        </div>
+        <label class="pred-nick" id="predNickWrap" hidden>
+          <span>Ψευδώνυμο</span>
+          <input id="predNick" maxlength="24" placeholder="π.χ. Ο Προφήτης" autocomplete="nickname">
+        </label>
+        <div class="pred-me" id="predMe"></div>
+      </div>
+      <p class="pred-status" id="predStatus" hidden></p>
+      <div class="split pred-split">
+        <div class="pred-list" id="predList"></div>
+        <div class="board-col">
+          <div class="card">
+            <div class="board-head">Κατάταξη προγνωστικών</div>
+            <ol class="scorers board" id="predBoard"></ol>
+          </div>
+        </div>
+      </div>
     </section>
 
     <!-- RESULTS -->
@@ -159,5 +190,6 @@
 
   <script src="data.js"></script>
   <script src="app.js"></script>
+  <script src="predictions.js"></script>
 </body>
 </html>
