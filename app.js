@@ -10,6 +10,7 @@
   const fmtDay = (dt) => `${DAYS[dt.getDay()]} ${dt.getDate()} ${MONTHS[dt.getMonth()]}`;
   const fmtTime = (dt) => dt.toTimeString().slice(0, 5);
   const crest = (t, size = "") => `<span class="crest ${size}" style="--c:${t.color}">${esc(t.short)}</span>`;
+  window.UTH = { teamById, DAYS, MONTHS, esc, crest }; // κοινά helpers για το predictions.js
 
   const played = L.matches.filter((m) => m.status === "played").sort((a, b) => d(a.date) - d(b.date));
   const upcoming = L.matches.filter((m) => m.status !== "played").sort((a, b) => d(a.date) - d(b.date));

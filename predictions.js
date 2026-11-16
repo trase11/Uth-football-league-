@@ -13,15 +13,12 @@
 (() => {
   const L = window.LEAGUE;
   const $ = (s) => document.querySelector(s);
-  const teamById = Object.fromEntries(L.teams.map((t) => [t.id, t]));
-  const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
-  const DAYS = ["Κυρ", "Δευ", "Τρι", "Τετ", "Πεμ", "Παρ", "Σαβ"];
-  const MONTHS = ["Ιαν", "Φεβ", "Μαρ", "Απρ", "Μαΐ", "Ιουν", "Ιουλ", "Αυγ", "Σεπ", "Οκτ", "Νοε", "Δεκ"];
+  const { teamById, esc, DAYS, MONTHS, crest } = window.UTH;
   const fmt = (dt) => `${DAYS[dt.getDay()]} ${dt.getDate()} ${MONTHS[dt.getMonth()]} · ${dt.toTimeString().slice(0, 5)}`;
-  const crest = (t) => `<span class="crest" style="--c:${t.color}">${esc(t.short)}</span>`;
 
   const keyOf = (m) => `${m.round}-${m.home}-${m.away}`;
   const signOf = (h, a) => (h > a ? "1" : h < a ? "2" : "X");
+  // shortcut: το κλείδωμα γίνεται μόνο στον browser, ένας πονηρός χρήστης μπορεί να ψηφίσει μετά τη σέντρα — αν μπουν έπαθλα, κλείδωμα στη βάση/backend
   const isLocked = (m) => m.status !== "upcoming" || new Date(m.date) <= new Date();
 
   const upcoming = L.matches.filter((m) => m.status === "upcoming").sort((a, b) => new Date(a.date) - new Date(b.date));
@@ -143,9 +140,9 @@
         <div class="pred-teams">
           <span class="fx-team home">${esc(h.name)}${crest(h)}</span>
           <span class="pred-score">
-            <input type="number" min="0" max="20" inputmode="numeric" aria-label="Γκολ ${esc(h.name)}" data-k="${k}" data-side="h" value="${p.h ?? ""}" ${locked ? "disabled" : ""} placeholder="–">
+            <input type="number" min="0" max="20" inputmode="numeric" aria-label="Γκολ ${esc(h.name)}" data-k="${k}" data-side="h" value="${Number.isInteger(p.h) ? p.h : ""}" ${locked ? "disabled" : ""} placeholder="–">
             <span>:</span>
-            <input type="number" min="0" max="20" inputmode="numeric" aria-label="Γκολ ${esc(a.name)}" data-k="${k}" data-side="a" value="${p.a ?? ""}" ${locked ? "disabled" : ""} placeholder="–">
+            <input type="number" min="0" max="20" inputmode="numeric" aria-label="Γκολ ${esc(a.name)}" data-k="${k}" data-side="a" value="${Number.isInteger(p.a) ? p.a : ""}" ${locked ? "disabled" : ""} placeholder="–">
           </span>
           <span class="fx-team away">${crest(a)}${esc(a.name)}</span>
         </div>
@@ -228,7 +225,8 @@
       all = {};
       await store.init((a) => {
         all = a;
-        if (a[myId] && !me.updatedAt) { me = JSON.parse(JSON.stringify(a[myId])); $("#predNick").value = me.nick || ""; }
+        const mine = a[myId];
+        if (mine && typeof mine.picks === "object" && mine.picks && !me.updatedAt) { me = JSON.parse(JSON.stringify(mine)); $("#predNick").value = me.nick || ""; }
         render();
       });
       if (!$("#predNick").value) $("#predNick").value = me.nick || "";
