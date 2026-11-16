@@ -473,8 +473,20 @@ main { padding-bottom: 48px; counter-reset: sec; }
 .chat-form input:focus, .chat-form select:focus { outline: none; border-color: var(--sky); }
 .chat-form select option { background: var(--bg-deep); }
 #chatNick { flex: 1; } #chatTeam { flex: 1; } #chatText { flex: 1; }
-.chat-send button { font: 900 13px var(--font-head); text-transform: uppercase; letter-spacing: 1px; padding: 0 18px; border: 0; background: var(--sky); color: var(--bg-deep); cursor: pointer; clip-path: polygon(8px 0, 100% 0, calc(100% - 8px) 100%, 0 100%); }
-.chat-send button:hover { background: var(--ice); }
+.chat-send button[type="submit"] { font: 900 13px var(--font-head); text-transform: uppercase; letter-spacing: 1px; padding: 0 18px; border: 0; background: var(--sky); color: var(--bg-deep); cursor: pointer; clip-path: polygon(8px 0, 100% 0, calc(100% - 8px) 100%, 0 100%); }
+.chat-send button[type="submit"]:hover { background: var(--ice); }
+.msg-img { display: block; margin-top: 6px; max-width: min(320px, 100%); max-height: 240px; object-fit: cover; border: 1px solid var(--line); cursor: zoom-in; }
+.msg-img.big { max-width: 100%; max-height: 70vh; object-fit: contain; cursor: zoom-out; }
+.msg-img-missing { display: inline-block; margin-top: 6px; font-size: 12px; color: var(--muted); border: 1px dashed var(--line); padding: 8px 12px; }
+.photo-btn { flex: none; width: 44px; display: grid; place-items: center; background: rgba(2,14,40,.6); border: 1px solid var(--line); border-radius: var(--r); color: var(--sky); cursor: pointer; }
+.photo-btn[hidden] { display: none; }
+.photo-btn:hover { border-color: var(--sky); }
+.photo-btn svg { width: 20px; height: 20px; fill: currentColor; }
+.chat-preview { position: relative; width: max-content; }
+.chat-preview[hidden] { display: none; }
+.chat-preview img { display: block; max-height: 90px; max-width: 160px; border: 1px solid var(--line-hi); }
+.chat-preview button { position: absolute; top: -8px; right: -8px; width: 22px; height: 22px; border: 0; background: var(--loss); color: #fff; font-size: 11px; cursor: pointer; }
+#chatSendBtn:disabled { opacity: .6; cursor: wait; }
 .chat-off { margin: 0; padding: 12px 18px 14px; border-top: 1px solid var(--line); color: var(--muted); font-size: 13px; }
 .chat-off[hidden] { display: none; }
 @media (max-width: 520px) { .chat-feed { height: 300px; } .msg { padding: 8px 12px; } .chat-form { padding: 10px 12px 12px; } }

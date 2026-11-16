@@ -89,9 +89,14 @@
             <input id="chatNick" maxlength="24" placeholder="Ψευδώνυμο" autocomplete="nickname" aria-label="Ψευδώνυμο">
             <select id="chatTeam" aria-label="Ομάδα που υποστηρίζεις"></select>
           </div>
+          <div class="chat-preview" id="chatPreview" hidden><img alt="Φωτογραφία προς αποστολή"><button type="button" aria-label="Αφαίρεση φωτογραφίας">✕</button></div>
           <div class="chat-send">
+            <button type="button" class="photo-btn" id="chatPhotoBtn" aria-label="Πρόσθεσε φωτογραφία" title="Φωτογραφία" hidden>
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 3 7.2 5H4a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-3.2L15 3H9zm3 5a4.5 4.5 0 1 1 0 9 4.5 4.5 0 0 1 0-9zm0 2a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5z"/></svg>
+            </button>
+            <input type="file" id="chatFile" accept="image/*" hidden>
             <input id="chatText" maxlength="280" placeholder="Γράψε κάτι για το ματς…" autocomplete="off" aria-label="Μήνυμα">
-            <button type="submit">Αποστολή</button>
+            <button type="submit" id="chatSendBtn">Αποστολή</button>
           </div>
         </form>
         <p class="chat-off" id="chatOff">Η κερκίδα λειτουργεί στην κοινή έκδοση του site.</p>
