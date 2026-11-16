@@ -20,13 +20,12 @@
     <button class="menu-btn" aria-label="Μενού" aria-expanded="false">☰</button>
     <nav class="nav">
       <a href="#standings">Βαθμολογία</a>
-      <a href="#fixtures">Πρόγραμμα</a>
+      <a href="#fixtures">Εβδομάδα</a>
       <a href="#predict">Προγνωστικά</a>
       <a href="#results">Αποτελέσματα</a>
       <a href="#scorers">Σκόρερ</a>
       <a href="#news">Ειδήσεις</a>
       <a href="#teams">Ομάδες</a>
-      <a href="#info">Πληροφορίες</a>
     </nav>
   </header>
 
@@ -70,8 +69,8 @@
     <!-- FIXTURES -->
     <section class="block" id="fixtures">
       <div class="block-head">
-        <h2>Επόμενα Ματς</h2>
-        <p class="block-note">Όλοι οι αγώνες στο Olympico Sports Club</p>
+        <h2>Ματς της εβδομάδας</h2>
+        <p class="block-note" id="fixturesNote"></p>
       </div>
       <div id="fixturesList"></div>
     </section>
@@ -80,12 +79,12 @@
     <section class="block" id="predict">
       <div class="block-head">
         <h2>Προγνωστικά</h2>
-        <p class="block-note">Παίξε χωρίς λεφτά — μόνο για τη δόξα</p>
+        <p class="block-note">Χωρίς λεφτά — έπαθλο για τον πρώτο της κατάταξης</p>
       </div>
       <div class="pred-bar card">
         <div class="pred-how">
           <span><b>Πώς παίζεται:</b> διάλεξε <span class="k">1</span> <span class="k">X</span> <span class="k">2</span> ή γράψε ακριβές σκορ.</span>
-          <span class="pts-rule"><b>3 πόντοι</b> για ακριβές σκορ · <b>1 πόντος</b> για σωστό σημείο. Οι ψήφοι κλειδώνουν στη σέντρα.</span>
+          <span class="pts-rule"><b>3 πόντοι</b> για ακριβές σκορ · <b>1 πόντος</b> για σωστό σημείο. Οι ψήφοι κλειδώνουν στη σέντρα. Ο πρώτος της κατάταξης κερδίζει έπαθλο.</span>
           <small id="predMode"></small>
         </div>
         <label class="pred-nick" id="predNickWrap" hidden>
@@ -93,14 +92,26 @@
           <input id="predNick" maxlength="24" placeholder="π.χ. Ο Προφήτης" autocomplete="nickname">
         </label>
         <div class="pred-me" id="predMe"></div>
+        <div class="pred-code" id="predCode" hidden></div>
       </div>
       <p class="pred-status" id="predStatus" hidden></p>
       <div class="split pred-split">
-        <div class="pred-list" id="predList"></div>
+        <div class="pred-list">
+          <div class="card admin" id="predAdmin" hidden></div>
+          <div class="pred-list" id="predList"></div>
+        </div>
         <div class="board-col">
           <div class="card">
             <div class="board-head">Κατάταξη προγνωστικών</div>
             <ol class="scorers board" id="predBoard"></ol>
+            <form class="verify" id="predVerify">
+              <label for="predVerifyCode">Επαλήθευση νικητή</label>
+              <div class="verify-row">
+                <input id="predVerifyCode" placeholder="XXXXX-XXXXX" autocomplete="off" spellcheck="false" maxlength="14">
+                <button type="submit">Έλεγχος</button>
+              </div>
+              <p class="verify-out" id="predVerifyOut" aria-live="polite"></p>
+            </form>
           </div>
         </div>
       </div>
@@ -137,26 +148,6 @@
     <section class="block" id="teams">
       <div class="block-head"><h2>Ομάδες</h2><p class="block-note">Πάτα σε μια ομάδα για αναλυτικά</p></div>
       <div class="teams-grid" id="teamsList"></div>
-    </section>
-
-    <!-- INFO -->
-    <section class="block split" id="info">
-      <div>
-        <div class="block-head"><h2>Πληροφορίες</h2><p class="block-note">Κανονισμοί τουρνουά</p></div>
-        <div class="card"><dl class="rules" id="rulesList"></dl></div>
-      </div>
-      <div>
-        <div class="block-head"><h2>Δήλωσε την ομάδα σου</h2></div>
-        <div class="card register">
-          <img src="assets/qr.jpg" alt="QR code δήλωσης ομάδας" width="180" height="180">
-          <p>Σκάναρε το QR ή πάτα το κουμπί για να δηλώσεις συμμετοχή.</p>
-          <a class="btn" id="registerBtn" href="#">Δήλωση συμμετοχής</a>
-          <p class="venue small">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a7 7 0 0 0-7 7c0 5.2 7 13 7 13s7-7.8 7-13a7 7 0 0 0-7-7zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5z"/></svg>
-            Olympico Sports Club
-          </p>
-        </div>
-      </div>
     </section>
   </main>
 

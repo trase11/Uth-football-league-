@@ -94,7 +94,13 @@
 
   /* ---------- Fixtures ---------- */
   const byRound = (list) => list.reduce((acc, m) => ((acc[m.round] ||= []).push(m), acc), {});
-  const upRounds = byRound(upcoming);
+  // μόνο τα ματς της τρέχουσας εβδομάδας (Δευτέρα–Κυριακή)
+  const now = new Date();
+  const weekStart = new Date(now.getFullYear(), now.getMonth(), now.getDate() - ((now.getDay() + 6) % 7));
+  const weekEnd = new Date(weekStart.getFullYear(), weekStart.getMonth(), weekStart.getDate() + 7);
+  const lastDay = new Date(weekEnd - 1);
+  $("#fixturesNote").textContent = `Εβδομάδα ${weekStart.getDate()} ${MONTHS[weekStart.getMonth()]} – ${lastDay.getDate()} ${MONTHS[lastDay.getMonth()]} · Olympico Sports Club`;
+  const upRounds = byRound(upcoming.filter((m) => d(m.date) >= weekStart && d(m.date) < weekEnd));
   $("#fixturesList").innerHTML = Object.keys(upRounds).map((r) => `
     <div class="round-label">${r}η αγωνιστική</div>
     ${upRounds[r].map((m) => {
@@ -107,7 +113,7 @@
         <div class="fx-team away">${crest(a)}${esc(a.name)}</div>
         <div class="fx-pitch">${soon ? `<span class="badge">Επόμενο</span><br>` : ""}${esc(m.pitch)}</div>
       </div>`;
-    }).join("")}`).join("") || `<p class="block-note">Δεν υπάρχουν προγραμματισμένα ματς.</p>`;
+    }).join("")}`).join("") || `<p class="block-note">Δεν υπάρχουν ματς αυτή την εβδομάδα.</p>`;
 
   /* ---------- Results ---------- */
   const resRounds = byRound(played);
@@ -213,12 +219,6 @@
     if (el) openTeam(el.dataset.team);
   });
   $("#teamDialog").addEventListener("click", (e) => { if (e.target === e.currentTarget) e.currentTarget.close(); });
-
-  /* ---------- Rules ---------- */
-  $("#rulesList").innerHTML = L.rules.map(([k, v]) => `<div><dt>${esc(k)}</dt><dd>${esc(v)}</dd></div>`).join("");
-
-  /* ---------- Register link ---------- */
-  if (L.registerUrl && L.registerUrl !== "#") $("#registerBtn").href = L.registerUrl;
 
   /* ---------- Nav: mobile menu + active section ---------- */
   const nav = $(".nav"), menuBtn = $(".menu-btn");
