@@ -160,7 +160,7 @@
     </div>
     <div class="br-lines"></div>
     <div class="br-final">
-      <div class="trophy">🏆</div>
+      <div class="trophy"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 2h12v2h4v3a5 5 0 0 1-4.6 5A6 6 0 0 1 13 15.9V19h4v3H7v-3h4v-3.1A6 6 0 0 1 6.6 12 5 5 0 0 1 2 7V4h4V2zm0 4H4v1a3 3 0 0 0 2 2.8V6zm12 0v3.8A3 3 0 0 0 20 7V6h-2z"/></svg></div>
       <div class="br-match"><div class="br-title">Τελικός</div>
         <div class="br-team"><span class="seed"></span>Νικητής Η1</div>
         <div class="br-team"><span class="seed"></span>Νικητής Η2</div>
