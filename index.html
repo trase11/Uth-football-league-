@@ -21,6 +21,7 @@
     <nav class="nav">
       <a href="#standings">Βαθμολογία</a>
       <a href="#fixtures">Εβδομάδα</a>
+      <a href="#chat">Κερκίδα</a>
       <a href="#predict">Προγνωστικά</a>
       <a href="#results">Αποτελέσματα</a>
       <a href="#scorers">Σκόρερ</a>
@@ -72,6 +73,29 @@
         <p class="block-note" id="fixturesNote"></p>
       </div>
       <div id="fixturesList"></div>
+    </section>
+
+    <!-- CHAT -->
+    <section class="block" id="chat">
+      <div class="block-head">
+        <h2>Κερκίδα</h2>
+        <p class="block-note"><span class="live-dot"></span>Live · <span id="chatCount"></span></p>
+      </div>
+      <div class="card chat">
+        <ol class="chat-feed" id="chatFeed" aria-live="polite"></ol>
+        <p class="pred-status chat-note" id="chatNote" hidden></p>
+        <form class="chat-form" id="chatForm" hidden>
+          <div class="chat-who">
+            <input id="chatNick" maxlength="24" placeholder="Ψευδώνυμο" autocomplete="nickname" aria-label="Ψευδώνυμο">
+            <select id="chatTeam" aria-label="Ομάδα που υποστηρίζεις"></select>
+          </div>
+          <div class="chat-send">
+            <input id="chatText" maxlength="280" placeholder="Γράψε κάτι για το ματς…" autocomplete="off" aria-label="Μήνυμα">
+            <button type="submit">Αποστολή</button>
+          </div>
+        </form>
+        <p class="chat-off" id="chatOff">Η κερκίδα λειτουργεί στην κοινή έκδοση του site.</p>
+      </div>
     </section>
 
     <!-- PREDICTIONS -->
@@ -166,5 +190,6 @@
   <script src="data.js"></script>
   <script src="app.js"></script>
   <script src="predictions.js"></script>
+  <script src="chat.js"></script>
 </body>
 </html>
