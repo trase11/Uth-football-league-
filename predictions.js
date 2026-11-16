@@ -5,9 +5,9 @@
  * - ΣΦΡΑΓΙΣΜΑ: στη σέντρα ο διοργανωτής (owner) πατάει «Σφράγισμα» και οι ψήφοι του ματς
  *   αντιγράφονται σε σημείο που μόνο εκείνος γράφει. Η κατάταξη μετράει ΜΟΝΟ σφραγισμένες ψήφους,
  *   άρα αλλαγές μετά τη σέντρα δεν μετράνε.
- * - ΑΠΟΔΕΙΞΗ ΝΙΚΗΤΗ: με την πρώτη ψήφο ο παίκτης παίρνει μυστικό κωδικό (π.χ. K7M2Q-9XWPA).
- *   Δημόσια αποθηκεύεται μόνο το SHA-256 του κωδικού· οι 4 πρώτοι χαρακτήρες του φαίνονται ως #tag
- *   δίπλα στο ψευδώνυμο. Στην παραλαβή ο νικητής δείχνει τον κωδικό και η «Επαλήθευση» βρίσκει ποιος είναι.
+ * - ΑΠΟΔΕΙΞΗ ΝΙΚΗΤΗ: κάθε ψευδώνυμο είναι μοναδικό και δεμένο με τον λογαριασμό του παίκτη.
+ *   Ο νικητής ανοίγει τη σελίδα στο κινητό του (γράφει «εσύ» δίπλα στο όνομά του) και ο διοργανωτής
+ *   βλέπει στην κατάταξη σε ποιον λογαριασμό ανήκει κάθε ψευδώνυμο.
  *
  * Αποθήκευση: κοινή βάση μέσα στο Claude artifact· αλλού τοπικά στον browser (μόνο για δοκιμή).
  */
@@ -27,35 +27,18 @@
   const played = L.matches.filter((m) => m.status === "played");
 
   /* ---------- State ---------- */
-  let all = {};      // viewerId -> { nick, picks, claim }
+  let all = {};      // viewerId -> { nick, picks }
   let sealed = {};   // matchKey -> { at, picks: { viewerId: {s,h,a} } }
   let myId = null;
-  let myCode = "";   // ο μυστικός κωδικός αυτού του παίκτη (ποτέ δημόσια)
   let isOwner = false;
+  let accountNames = {}; // viewerId -> όνομα λογαριασμού (μόνο για τον διοργανωτή)
   let me = { nick: "", picks: {} };
   let store = null;
   let saving = Promise.resolve();
 
-  /* ---------- Claim code ---------- */
-  const ALPHA = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // χωρίς 0/O/1/I
-  const normCode = (s) => String(s).toUpperCase().replace(/[^A-Z0-9]/g, "");
-  const newCode = () => {
-    const r = crypto.getRandomValues(new Uint8Array(10));
-    const c = [...r].map((b) => ALPHA[b % 32]).join(""); // 256 % 32 === 0, άρα ομοιόμορφο
-    return c.slice(0, 5) + "-" + c.slice(5);
-  };
-  const sha = async (s) => [...new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(normCode(s))))]
-    .map((b) => b.toString(16).padStart(2, "0")).join("");
-  const tagOf = (claim) => (typeof claim === "string" && claim.length >= 4 ? "#" + claim.slice(0, 4).toUpperCase() : "");
-
-  async function ensureClaim() {
-    if (!myCode) { myCode = newCode(); await store.saveCode(myCode); }
-    if (!me.claim) me.claim = await sha(myCode);
-  }
-
   /* ---------- Stores ---------- */
   function createLocalStore() {
-    const KEY = "uth-predictions", CODE = "uth-claim-code";
+    const KEY = "uth-predictions";
     const get = (k) => { try { return localStorage.getItem(k); } catch { return null; } };
     const put = (k, v) => { try { localStorage.setItem(k, v); } catch {} };
     return {
@@ -63,11 +46,9 @@
       async init(onAll) {
         myId = "local";
         try { const saved = JSON.parse(get(KEY)); if (saved?.picks) me = saved; } catch {}
-        myCode = get(CODE) || "";
         onAll({ local: me });
       },
       async save(doc) { put(KEY, JSON.stringify(doc)); },
-      async saveCode(code) { put(CODE, code); },
     };
   }
 
@@ -79,7 +60,6 @@
     if (!id) return null;
     let canWrite = await user.can("data.write").catch(() => null);
     const owner = await user.isOwner();
-    const codeDoc = db.collection("data/users/" + id).doc("claim"); // ιδιωτικό: μόνο ο ίδιος το διαβάζει
     const denied = (e) => ["permission_denied", "invalid_argument", "not_granted"].includes(e?.code);
     return {
       shared: true,
@@ -87,7 +67,6 @@
       async init(onAll, onSealed) {
         myId = id;
         isOwner = owner;
-        try { const c = await codeDoc.get(); if (c.exists) myCode = String(c.data().code || ""); } catch {}
         const timer = setTimeout(() => setStatus("Η σύνδεση με τη βάση αργεί… οι ψήφοι ίσως δεν είναι ενημερωμένες."), 10000);
         const fail = (e) => { clearTimeout(timer); setStatus("Δεν ήταν δυνατή η φόρτωση (" + (e?.code || "σφάλμα") + ")."); };
         db.collection("picks").onSnapshot((snap) => {
@@ -110,7 +89,10 @@
           render();
         }
       },
-      async saveCode(code) { await codeDoc.set({ code }); },
+      async names(ids) { // ονόματα λογαριασμών, μόνο για τον διοργανωτή
+        const ps = await user.profiles(ids).catch(() => ({}));
+        return Object.fromEntries(ids.map((x) => [x, ps?.[x]?.name || ""]));
+      },
       async seal(k, picks) { await db.doc("sealed/" + k).set({ at: new Date().toISOString(), picks }); },
     };
   }
@@ -137,7 +119,7 @@
   function standings() {
     return Object.entries(all)
       .filter(([, v]) => v && typeof v.picks === "object" && v.picks)
-      .map(([id, v]) => ({ id, nick: String(v.nick || "Ανώνυμος").slice(0, 24), claim: v.claim, ...pointsFor(id) }))
+      .map(([id, v]) => ({ id, nick: String(v.nick || "Ανώνυμος").slice(0, 24), ...pointsFor(id) }))
       .sort((x, y) => y.pts - x.pts || y.exact - x.exact || y.n - x.n || x.nick.localeCompare(y.nick, "el"));
   }
 
@@ -218,22 +200,25 @@
     $("#predBoard").innerHTML = rows.length ? rows.slice(0, 20).map((r, i) => `
       <li class="${r.id === myId ? "me" : ""}">
         <span class="rank">${i + 1}</span>
-        <span class="who"><b></b> <span class="tag">${esc(tagOf(r.claim))}</span><small>${r.exact} ακριβή · ${r.signs} σημεία · ${r.n} ματς</small></span>
+        <span class="who"><b></b><small>${r.exact} ακριβή · ${r.signs} σημεία · ${r.n} ματς</small>${isOwner ? `<small class="acct"></small>` : ""}</span>
         <span class="g">${r.pts}</span>
       </li>`).join("") : `<li class="empty">Κανείς δεν έχει ψηφίσει ακόμα — γίνε ο πρώτος!</li>`;
-    $("#predBoard").querySelectorAll("li:not(.empty) .who b").forEach((b, i) => { b.textContent = rows[i].nick + (rows[i].id === myId ? " (εσύ)" : ""); });
+    $("#predBoard").querySelectorAll("li:not(.empty)").forEach((li, i) => {
+      li.querySelector(".who b").textContent = rows[i].nick + (rows[i].id === myId ? " (εσύ)" : "");
+      const acct = li.querySelector(".acct");
+      if (acct) acct.textContent = "Λογαριασμός: " + (accountNames[rows[i].id] || "—");
+    });
+    if (isOwner && store?.names) {
+      const missing = rows.map((r) => r.id).filter((x) => !(x in accountNames)).slice(0, 64);
+      if (missing.length) store.names(missing).then((n) => { Object.assign(accountNames, n); render({ list: false }); });
+    }
 
-    const mine = pointsFor(myId);
-    $("#predMe").innerHTML = `<b>${mine.pts}</b><small>πόντοι</small>`;
+    const mine = pointsFor(myId), myRank = rows.findIndex((r) => r.id === myId) + 1;
+    $("#predMe").innerHTML = `<b>${mine.pts}</b><small>πόντοι${myRank ? ` · ${myRank}η θέση` : ""}</small>`;
     $("#predNickWrap").hidden = !(store?.shared && canVote);
     $("#predNick").classList.toggle("need", store?.shared && canVote && !me.nick);
-    $("#predCode").hidden = !myCode;
-    if (myCode) $("#predCode").innerHTML = `
-      <span class="code-label">Ο κωδικός νίκης σου <span class="tag">${esc(tagOf(me.claim))}</span></span>
-      <code>${esc(myCode)}</code>
-      <small>Κράτα τον (screenshot). Αν βγεις πρώτος, τον δείχνεις για να παραλάβεις το έπαθλο. Μην τον δώσεις σε κανέναν.</small>`;
     $("#predMode").textContent = store?.shared
-      ? (canVote ? "Η κατάταξη μετράει μόνο τις ψήφους που σφραγίστηκαν στη σέντρα." : "Μπορείς να βλέπεις τα προγνωστικά, αλλά δεν έχεις δικαίωμα ψήφου σε αυτή τη σελίδα.")
+      ? (canVote ? "Μετράνε μόνο οι ψήφοι που σφραγίστηκαν στη σέντρα. Για το έπαθλο: δείχνεις αυτή τη σελίδα από το κινητό σου — δίπλα στο όνομά σου γράφει «εσύ»." : "Μπορείς να βλέπεις τα προγνωστικά, αλλά δεν έχεις δικαίωμα ψήφου σε αυτή τη σελίδα.")
       : "Προσχέδιο: οι ψήφοι σου μένουν σε αυτή τη συσκευή. Για τον διαγωνισμό χρειάζεται η κοινή βάση.";
   }
 
@@ -248,7 +233,6 @@
     $("#predList").addEventListener("click", async (e) => {
       const b = e.target.closest(".odd");
       if (!b || b.disabled || needNick()) return;
-      await ensureClaim();
       const k = b.dataset.k, cur = me.picks[k] || {};
       me.picks[k] = { ...cur, s: cur.s === b.dataset.s ? undefined : b.dataset.s };
       if (!me.picks[k].s && !Number.isInteger(me.picks[k].h)) delete me.picks[k];
@@ -259,7 +243,6 @@
       const inp = e.target.closest("input[data-k]");
       if (!inp) return;
       if (needNick()) { inp.value = ""; return; }
-      await ensureClaim();
       const k = inp.dataset.k, cur = { ...(me.picks[k] || {}) };
       const v = inp.value === "" ? undefined : Math.max(0, Math.min(20, parseInt(inp.value, 10)));
       cur[inp.dataset.side] = Number.isInteger(v) ? v : undefined;
@@ -273,6 +256,9 @@
     $("#predNick").addEventListener("change", (e) => {
       const v = e.target.value.trim().slice(0, 24);
       if (v === me.nick) return;
+      const taken = Object.entries(all).some(([id, x]) => id !== myId && String(x?.nick || "").toLocaleLowerCase("el") === v.toLocaleLowerCase("el"));
+      if (taken) { setStatus(`Το ψευδώνυμο «${v}» το έχει ήδη άλλος παίκτης. Διάλεξε άλλο.`); e.target.value = me.nick || ""; return; }
+      setStatus("");
       me.nick = v;
       queueSave();
     });
@@ -288,18 +274,6 @@
       b.disabled = true; b.textContent = "…";
       try { await store.seal(k, picks); } catch (err) { b.disabled = false; b.textContent = "Σφράγισμα"; setStatus("Το σφράγισμα απέτυχε (" + (err?.code || "σφάλμα") + ")."); }
     });
-    $("#predVerify").addEventListener("submit", async (e) => {
-      e.preventDefault();
-      const out = $("#predVerifyOut");
-      const code = $("#predVerifyCode").value;
-      if (normCode(code).length !== 10) { out.className = "verify-out bad"; out.textContent = "Ο κωδικός έχει 10 χαρακτήρες (π.χ. K7M2Q-9XWPA)."; return; }
-      const h = await sha(code);
-      const rows = standings();
-      const i = rows.findIndex((r) => r.claim === h);
-      if (i < 0) { out.className = "verify-out bad"; out.textContent = "Ο κωδικός δεν αντιστοιχεί σε κανέναν παίκτη."; return; }
-      out.className = "verify-out ok";
-      out.textContent = `Σωστός κωδικός: ανήκει στον/στην «${rows[i].nick}» ${tagOf(rows[i].claim)} — ${i + 1}η θέση με ${rows[i].pts} πόντους.`;
-    });
   }
 
   /* ---------- Boot ---------- */
@@ -314,7 +288,6 @@
       store = shared;
       me = { nick: "", picks: {} };
       all = {};
-      myCode = "";
       await store.init((a) => {
         all = a;
         const mine = a[myId];

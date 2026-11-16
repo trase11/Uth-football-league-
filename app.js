@@ -46,7 +46,7 @@
     </tr></thead>
     <tbody>${table.map((r, i) => {
       const gd = r.gf - r.ga;
-      return `<tr class="${i < 4 ? "q" : ""}" data-team="${r.team.id}">
+      return `<tr data-team="${r.team.id}">
         <td class="pos">${i + 1}</td>
         <td class="team-cell"><span class="team-name">${crest(r.team)}${esc(r.team.name)}</span></td>
         <td>${r.p}</td><td>${r.w}</td><td>${r.dr}</td><td>${r.l}</td>
@@ -81,11 +81,6 @@
     $("#nextMatch").innerHTML = `<div class="nm-label">Το τουρνουά ολοκληρώθηκε</div>`;
   }
 
-  const totalGoals = played.reduce((s, m) => s + m.score[0] + m.score[1], 0);
-  $("#heroStats").innerHTML = [
-    [L.teams.length, "Ομάδες"], [played.length, "Αγώνες"], [totalGoals, "Γκολ"],
-    [played.length ? (totalGoals / played.length).toFixed(1) : "0", "Γκολ / ματς"],
-  ].map(([v, l]) => `<div><b>${v}</b><small>${l}</small></div>`).join("");
 
   /* ---------- Ticker ---------- */
   const tickerItems = played.slice().reverse().map((m) =>
@@ -156,22 +151,6 @@
       <span class="g"><span class="bar" style="width:${(s.g / maxG) * 60}px"></span>${s.g}</span>
     </li>`).join("");
 
-  /* ---------- Final Four bracket ---------- */
-  const seed = (i) => table[i]?.team;
-  const brTeam = (t, n) => `<div class="br-team"><span class="seed">${n}</span>${crest(t)}${esc(t.name)}</div>`;
-  $("#bracket").innerHTML = `
-    <div class="br-col">
-      <div class="br-match"><div class="br-title">Ημιτελικός 1</div>${brTeam(seed(0), 1)}${brTeam(seed(3), 4)}</div>
-      <div class="br-match"><div class="br-title">Ημιτελικός 2</div>${brTeam(seed(1), 2)}${brTeam(seed(2), 3)}</div>
-    </div>
-    <div class="br-lines"></div>
-    <div class="br-final">
-      <div class="trophy"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 2h12v2h4v3a5 5 0 0 1-4.6 5A6 6 0 0 1 13 15.9V19h4v3H7v-3h4v-3.1A6 6 0 0 1 6.6 12 5 5 0 0 1 2 7V4h4V2zm0 4H4v1a3 3 0 0 0 2 2.8V6zm12 0v3.8A3 3 0 0 0 20 7V6h-2z"/></svg></div>
-      <div class="br-match"><div class="br-title">Τελικός</div>
-        <div class="br-team"><span class="seed"></span>Νικητής Η1</div>
-        <div class="br-team"><span class="seed"></span>Νικητής Η2</div>
-      </div>
-    </div>`;
 
   /* ---------- News ---------- */
   $("#newsList").innerHTML = L.news.map((n) => {
@@ -183,7 +162,40 @@
     </article>`;
   }).join("");
 
-  /* ---------- Teams ---------- */
+  /* ---------- Teams & players (κάρτες τύπου FIFA) ---------- */
+  const STATS = ["ΤΑΧ", "ΣΟΥ", "ΠΑΣ", "ΝΤΡ", "ΑΜΥ", "ΣΩΜ"];
+  const WEIGHTS = { // βάρος κάθε στατιστικού ανά θέση για το συνολικό rating
+    GK: [0, 0, .2, 0, .5, .3], DF: [.15, 0, .15, .05, .45, .2],
+    MF: [.15, .15, .3, .25, .05, .1], FW: [.2, .35, .1, .2, 0, .15],
+  };
+  const POS = { GK: "Τερματοφύλακας", DF: "Αμυντικός", MF: "Μέσος", FW: "Επιθετικός" };
+  const goalsBy = {};
+  for (const m of played) for (const [tid, name] of m.goals || []) goalsBy[tid + "|" + name] = (goalsBy[tid + "|" + name] || 0) + 1;
+  const playersOf = (t) => (t.players || []).map(([name, num, pos, st]) => ({
+    name, num, pos, st,
+    ovr: Math.round(st.reduce((s, v, i) => s + v * (WEIGHTS[pos] || WEIGHTS.MF)[i], 0)),
+    goals: goalsBy[t.id + "|" + name] || 0,
+  }));
+  const avg = (xs) => (xs.length ? Math.round(xs.reduce((a, b) => a + b, 0) / xs.length) : 0);
+  const teamOvr = (t) => avg(playersOf(t).map((p) => p.ovr));
+  const tier = (o) => (o >= 80 ? "gold" : o >= 70 ? "silver" : "bronze");
+
+  // Radar: παίκτης (γεμάτο) πάνω στον μέσο όρο της ομάδας (διακεκομμένο)
+  const radar = (vals, ref) => {
+    const R = 92, C = 130, ang = (i) => -Math.PI / 2 + (i * Math.PI) / 3;
+    const pt = (v, i) => [C + (R * v / 100) * Math.cos(ang(i)), C + (R * v / 100) * Math.sin(ang(i))];
+    const poly = (vs) => vs.map((v, i) => pt(v, i).map((n) => n.toFixed(1)).join(",")).join(" ");
+    const rings = [25, 50, 75, 100].map((v) => `<polygon class="rg" points="${poly(Array(6).fill(v))}"/>`).join("");
+    const spokes = STATS.map((_, i) => { const [x, y] = pt(100, i); return `<line class="rg" x1="${C}" y1="${C}" x2="${x}" y2="${y}"/>`; }).join("");
+    const labels = STATS.map((l, i) => {
+      const [x, y] = pt(122, i);
+      return `<text x="${x}" y="${y}" text-anchor="middle" dominant-baseline="middle"><tspan class="rl">${l}</tspan><tspan class="rv" x="${x}" dy="14">${vals[i]}</tspan></text>`;
+    }).join("");
+    const dots = vals.map((v, i) => { const [x, y] = pt(v, i); return `<circle class="rd" cx="${x}" cy="${y}" r="4"><title>${STATS[i]}: ${v} (μ.ο. ομάδας ${ref[i]})</title></circle>`; }).join("");
+    return `<svg class="radar" viewBox="-20 -10 300 290" role="img" aria-label="Στατιστικά: ${STATS.map((l, i) => `${l} ${vals[i]}`).join(", ")}">
+      ${rings}${spokes}<polygon class="rref" points="${poly(ref)}"/><polygon class="rp" points="${poly(vals)}"/>${dots}${labels}</svg>`;
+  };
+
   const rowOf = (id) => table.find((r) => r.team.id === id);
   $("#teamsList").innerHTML = L.teams.map((t) => {
     const r = rowOf(t.id), pos = table.indexOf(r) + 1;
@@ -191,12 +203,14 @@
       ${crest(t, "lg")}
       <h3>${esc(t.name)}</h3>
       <small>${esc(t.dept)}</small>
-      <div class="tc-stats"><span><b>${pos}η</b> θέση</span><span><b>${r.pts}</b> βαθ.</span></div>
+      <div class="tc-stats"><span><b>${pos}η</b> θέση</span><span><b>${r.pts}</b> βαθ.</span><span><b>${teamOvr(t)}</b> rating</span></div>
     </button>`;
   }).join("");
 
   const openTeam = (id) => {
     const t = teamById[id], r = rowOf(id), pos = table.indexOf(r) + 1;
+    const squad = playersOf(t);
+    const ref = STATS.map((_, i) => avg(squad.map((p) => p.st[i])));
     const games = L.matches.filter((m) => m.home === id || m.away === id).sort((a, b) => d(a.date) - d(b.date));
     const line = (m) => {
       const opp = teamById[m.home === id ? m.away : m.home];
@@ -204,14 +218,37 @@
       const res = m.status === "played" ? `${m.score[0]}-${m.score[1]}` : `${fmtDay(d(m.date))} ${fmtTime(d(m.date))}`;
       return `<li><span>${vs} ${esc(opp.name)}</span><span>${res}</span></li>`;
     };
+    const big = (p) => `
+      <div class="fcard ${tier(p.ovr)}">
+        <div class="fc-top"><b class="fc-ovr">${p.ovr}</b><span class="fc-pos">${p.pos}</span>${crest(t)}</div>
+        <div class="fc-num">${p.num}</div>
+        <div class="fc-name">${esc(p.name)}</div>
+        <div class="fc-stats">${STATS.map((l, i) => `<span><b>${p.st[i]}</b> ${l}</span>`).join("")}</div>
+        <div class="fc-foot">${POS[p.pos] || p.pos} · ${p.goals} γκολ</div>
+      </div>`;
+    const showPlayer = (i) => {
+      const p = squad[i];
+      $("#tdPlayer").innerHTML = big(p) + `<div class="td-radar">${radar(p.st, ref)}
+        <div class="radar-key"><span class="k-p"></span>${esc(p.name)} <span class="k-r"></span>Μ.Ο. ομάδας</div></div>`;
+      $("#tdRoster").querySelectorAll(".pmini").forEach((b) => b.setAttribute("aria-pressed", b.dataset.player == i));
+    };
     $("#teamDialogBody").innerHTML = `
       <div class="td-head">${crest(t, "xl")}<div><h3>${esc(t.name)}</h3><p>${esc(t.dept)}</p><p>Αρχηγός: ${esc(t.captain)}</p></div></div>
       <div class="td-stats">
         <div><b>${pos}η</b><small>Θέση</small></div><div><b>${r.pts}</b><small>Βαθμοί</small></div>
-        <div><b>${r.w}-${r.dr}-${r.l}</b><small>Ν-Ι-Η</small></div><div><b>${r.gf}:${r.ga}</b><small>Γκολ</small></div>
+        <div><b>${r.w}-${r.dr}-${r.l}</b><small>Ν-Ι-Η</small></div><div><b>${teamOvr(t)}</b><small>Rating</small></div>
       </div>
+      ${squad.length ? `<div class="td-sub">Ρόστερ</div>
+      <div class="td-squad"><div class="td-player" id="tdPlayer"></div>
+        <div class="td-roster" id="tdRoster">${squad.map((p, i) => `
+          <button class="pmini ${tier(p.ovr)}" data-player="${i}"><b>${p.ovr}</b><span class="pm-pos">${p.pos}</span><span class="pm-name">${esc(p.name)}</span><span class="pm-num">${p.num}</span></button>`).join("")}
+        </div></div>` : ""}
       <div class="td-sub">Αγώνες</div>
       <ul class="td-list">${games.map(line).join("")}</ul>`;
+    if (squad.length) {
+      showPlayer(squad.reduce((bi, p, i) => (p.ovr > squad[bi].ovr ? i : bi), 0));
+      $("#tdRoster").addEventListener("click", (e) => { const b = e.target.closest(".pmini"); if (b) showPlayer(+b.dataset.player); });
+    }
     $("#teamDialog").showModal();
   };
   document.addEventListener("click", (e) => {

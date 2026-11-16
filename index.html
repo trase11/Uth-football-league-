@@ -47,7 +47,6 @@
 
         <div class="next-match" id="nextMatch"></div>
 
-        <div class="hero-stats" id="heroStats"></div>
       </div>
       <button class="ball" id="ball" aria-label="Κλώτσα την μπάλα!" title="Κλώτσα την μπάλα!">
         <svg viewBox="0 0 100 100"><use href="#ball-svg"/></svg>
@@ -58,12 +57,12 @@
     <section class="block" id="standings">
       <div class="block-head">
         <h2>Βαθμολογία</h2>
-        <p class="block-note">Κανονική περίοδος · Οι 4 πρώτοι στο <b>Final Four</b></p>
+        <p class="block-note">Κανονική περίοδος</p>
       </div>
       <div class="card table-wrap">
         <table class="table" id="standingsTable"></table>
       </div>
-      <div class="legend"><span class="dot q"></span> Final Four <span class="form-chip W">Ν</span> Νίκη <span class="form-chip D">Ι</span> Ισοπαλία <span class="form-chip L">Η</span> Ήττα</div>
+      <div class="legend"><span class="form-chip W">Ν</span> Νίκη <span class="form-chip D">Ι</span> Ισοπαλία <span class="form-chip L">Η</span> Ήττα</div>
     </section>
 
     <!-- FIXTURES -->
@@ -92,7 +91,6 @@
           <input id="predNick" maxlength="24" placeholder="π.χ. Ο Προφήτης" autocomplete="nickname">
         </label>
         <div class="pred-me" id="predMe"></div>
-        <div class="pred-code" id="predCode" hidden></div>
       </div>
       <p class="pred-status" id="predStatus" hidden></p>
       <div class="split pred-split">
@@ -104,14 +102,6 @@
           <div class="card">
             <div class="board-head">Κατάταξη προγνωστικών</div>
             <ol class="scorers board" id="predBoard"></ol>
-            <form class="verify" id="predVerify">
-              <label for="predVerifyCode">Επαλήθευση νικητή</label>
-              <div class="verify-row">
-                <input id="predVerifyCode" placeholder="XXXXX-XXXXX" autocomplete="off" spellcheck="false" maxlength="14">
-                <button type="submit">Έλεγχος</button>
-              </div>
-              <p class="verify-out" id="predVerifyOut" aria-live="polite"></p>
-            </form>
           </div>
         </div>
       </div>
@@ -126,16 +116,10 @@
       <div class="grid-2" id="resultsList"></div>
     </section>
 
-    <!-- SCORERS + BRACKET -->
-    <section class="block split" id="scorers">
-      <div>
-        <div class="block-head"><h2>Σκόρερ</h2><p class="block-note">Χρυσό Παπούτσι</p></div>
-        <div class="card"><ol class="scorers" id="scorersList"></ol></div>
-      </div>
-      <div>
-        <div class="block-head"><h2>Final Four</h2><p class="block-note">Με βάση την τρέχουσα βαθμολογία</p></div>
-        <div class="card bracket" id="bracket"></div>
-      </div>
+    <!-- SCORERS -->
+    <section class="block" id="scorers">
+      <div class="block-head"><h2>Σκόρερ</h2><p class="block-note">Χρυσό Παπούτσι</p></div>
+      <div class="card"><ol class="scorers cols" id="scorersList"></ol></div>
     </section>
 
     <!-- NEWS -->
@@ -158,7 +142,7 @@
   </footer>
 
   <!-- Team dialog -->
-  <dialog class="team-dialog" id="teamDialog">
+  <dialog class="team-dialog wide" id="teamDialog">
     <button class="close" aria-label="Κλείσιμο" onclick="this.closest('dialog').close()">✕</button>
     <div id="teamDialogBody"></div>
   </dialog>
