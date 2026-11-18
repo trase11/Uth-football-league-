@@ -10,17 +10,19 @@
   const fmtDay = (dt) => `${DAYS[dt.getDay()]} ${dt.getDate()} ${MONTHS[dt.getMonth()]}`;
   const fmtTime = (dt) => dt.toTimeString().slice(0, 5);
   const crest = (t, size = "") => `<span class="crest ${size}" style="--c:${t.color}">${esc(t.short)}</span>`;
+  const groupName = (m) => L.groups?.[teamById[m.home]?.group] || "";
   window.UTH = { teamById, DAYS, MONTHS, esc, crest }; // κοινά helpers για το predictions.js
 
   const played = L.matches.filter((m) => m.status === "played").sort((a, b) => d(a.date) - d(b.date));
   const upcoming = L.matches.filter((m) => m.status !== "played").sort((a, b) => d(a.date) - d(b.date));
 
   /* ---------- Standings ---------- */
-  function computeTable() {
-    const rows = Object.fromEntries(L.teams.map((t) => [t.id, { team: t, p: 0, w: 0, dr: 0, l: 0, gf: 0, ga: 0, pts: 0, form: [] }]));
+  function computeTable(teams = L.teams) {
+    const rows = Object.fromEntries(teams.map((t) => [t.id, { team: t, p: 0, w: 0, dr: 0, l: 0, gf: 0, ga: 0, pts: 0, form: [] }]));
     for (const m of played) {
       const [hg, ag] = m.score;
       const h = rows[m.home], a = rows[m.away];
+      if (!h || !a) continue; // ματς άλλου ομίλου
       h.p++; a.p++; h.gf += hg; h.ga += ag; a.gf += ag; a.ga += hg;
       if (hg > ag) { h.w++; a.l++; h.pts += 3; h.form.push("W"); a.form.push("L"); }
       else if (hg < ag) { a.w++; h.l++; a.pts += 3; a.form.push("W"); h.form.push("L"); }
@@ -29,7 +31,6 @@
     return Object.values(rows).sort((x, y) =>
       y.pts - x.pts || (y.gf - y.ga) - (x.gf - x.ga) || y.gf - x.gf || x.team.name.localeCompare(y.team.name, "el"));
   }
-  const table = computeTable();
 
   const formChips = (form) => {
     const last = form.slice(-5);
@@ -39,23 +40,31 @@
     return `<span class="form">${chips.join("")}</span>`;
   };
 
-  $("#standingsTable").innerHTML = `
-    <thead><tr>
-      <th>#</th><th class="team-col">Ομάδα</th><th title="Αγώνες">Αγ</th><th title="Νίκες">Ν</th><th title="Ισοπαλίες">Ι</th><th title="Ήττες">Η</th>
-      <th title="Γκολ">Γκολ</th><th title="Διαφορά">+/-</th><th>Βαθ</th><th>Φόρμα</th>
-    </tr></thead>
-    <tbody>${table.map((r, i) => {
-      const gd = r.gf - r.ga;
-      return `<tr data-team="${r.team.id}">
-        <td class="pos">${i + 1}</td>
-        <td class="team-cell"><span class="team-name">${crest(r.team)}${esc(r.team.name)}</span></td>
-        <td>${r.p}</td><td>${r.w}</td><td>${r.dr}</td><td>${r.l}</td>
-        <td>${r.gf}:${r.ga}</td>
-        <td class="${gd > 0 ? "gd-pos" : gd < 0 ? "gd-neg" : ""}">${gd > 0 ? "+" : ""}${gd}</td>
-        <td class="pts">${r.pts}</td>
-        <td>${formChips(r.form)}</td>
-      </tr>`;
-    }).join("")}</tbody>`;
+  const groupKeys = Object.keys(L.groups || { "": "" });
+  $("#standingsGroups").innerHTML = groupKeys.map((g) => {
+    const rows = computeTable(L.teams.filter((t) => (t.group || "") === g));
+    return `<div class="group-block">
+      ${L.groups ? `<div class="group-title">${esc(L.groups[g])}</div>` : ""}
+      <div class="card table-wrap"><table class="table">
+      <thead><tr>
+        <th>#</th><th class="team-col">Ομάδα</th><th title="Αγώνες">Αγ</th><th title="Νίκες">Ν</th><th title="Ισοπαλίες">Ι</th><th title="Ήττες">Η</th>
+        <th title="Γκολ">Γκολ</th><th title="Διαφορά">+/-</th><th>Βαθ</th><th>Φόρμα</th>
+      </tr></thead>
+      <tbody>${rows.map((r, i) => {
+        const gd = r.gf - r.ga;
+        return `<tr data-team="${r.team.id}">
+          <td class="pos">${i + 1}</td>
+          <td class="team-cell"><span class="team-name">${crest(r.team)}${esc(r.team.name)}</span></td>
+          <td>${r.p}</td><td>${r.w}</td><td>${r.dr}</td><td>${r.l}</td>
+          <td>${r.gf}:${r.ga}</td>
+          <td class="${gd > 0 ? "gd-pos" : gd < 0 ? "gd-neg" : ""}">${gd > 0 ? "+" : ""}${gd}</td>
+          <td class="pts">${r.pts}</td>
+          <td>${formChips(r.form)}</td>
+        </tr>`;
+      }).join("")}</tbody></table></div></div>`;
+  }).join("");
+  // θέση κάθε ομάδας μέσα στον όμιλό της
+  const table = groupKeys.flatMap((g) => computeTable(L.teams.filter((t) => (t.group || "") === g)).map((r, i) => ({ ...r, gpos: i + 1 })));
 
   /* ---------- Hero: next match + countdown + stats ---------- */
   const next = upcoming.find((m) => d(m.date) > new Date()) || upcoming[0];
@@ -69,7 +78,7 @@
         <div class="nm-team">${crest(a, "lg")}${esc(a.name)}</div>
       </div>
       <div class="countdown" id="countdown"></div>
-      <div class="nm-meta">${fmtDay(dt)} · ${fmtTime(dt)} · ${esc(next.pitch)}</div>`;
+      <div class="nm-meta">${fmtDay(dt)} · ${fmtTime(dt)} · ${esc(groupName(next))}</div>`;
     const cd = $("#countdown");
     const tick = () => {
       let s = Math.max(0, Math.floor((dt - new Date()) / 1000));
@@ -83,8 +92,9 @@
 
 
   /* ---------- Ticker ---------- */
-  const tickerItems = played.slice().reverse().map((m) =>
-    `<span>${esc(teamById[m.home].name)}<b>${m.score[0]} - ${m.score[1]}</b>${esc(teamById[m.away].name)}</span>`).join("");
+  const tickerItems = (played.length ? played.slice().reverse() : upcoming.slice(0, 8)).map((m) => played.length
+    ? `<span>${esc(teamById[m.home].name)}<b>${m.score[0]} - ${m.score[1]}</b>${esc(teamById[m.away].name)}</span>`
+    : `<span>${esc(fmtDay(d(m.date)))} ${fmtTime(d(m.date))}<b>${esc(teamById[m.home].short)} - ${esc(teamById[m.away].short)}</b>${esc(teamById[m.home].name)} – ${esc(teamById[m.away].name)}</span>`).join("");
   $("#ticker").innerHTML = tickerItems + tickerItems; // duplicated for seamless loop
 
   /* ---------- Fixtures ---------- */
@@ -93,9 +103,18 @@
   const now = new Date();
   const weekStart = new Date(now.getFullYear(), now.getMonth(), now.getDate() - ((now.getDay() + 6) % 7));
   const weekEnd = new Date(weekStart.getFullYear(), weekStart.getMonth(), weekStart.getDate() + 7);
-  const lastDay = new Date(weekEnd - 1);
-  $("#fixturesNote").textContent = `Εβδομάδα ${weekStart.getDate()} ${MONTHS[weekStart.getMonth()]} – ${lastDay.getDate()} ${MONTHS[lastDay.getMonth()]} · Olympico Sports Club`;
-  const upRounds = byRound(upcoming.filter((m) => d(m.date) >= weekStart && d(m.date) < weekEnd));
+  let wStart = weekStart, wEnd = weekEnd;
+  const inWeek = (m) => d(m.date) >= wStart && d(m.date) < wEnd;
+  const firstLater = upcoming.find((m) => d(m.date) >= weekEnd);
+  const thisWeek = upcoming.some(inWeek);
+  if (!thisWeek && firstLater) { // καμία αγωνιστική αυτή την εβδομάδα: δείξε την επόμενη εβδομάδα με ματς
+    const f = d(firstLater.date);
+    wStart = new Date(f.getFullYear(), f.getMonth(), f.getDate() - ((f.getDay() + 6) % 7));
+    wEnd = new Date(wStart.getFullYear(), wStart.getMonth(), wStart.getDate() + 7);
+  }
+  const lastDay = new Date(wEnd - 1);
+  $("#fixturesNote").textContent = `${thisWeek ? "Εβδομάδα" : "Αυτή την εβδομάδα δεν έχει ματς · Επόμενη"} ${wStart.getDate()} ${MONTHS[wStart.getMonth()]} – ${lastDay.getDate()} ${MONTHS[lastDay.getMonth()]} · Olympico Sports Club`;
+  const upRounds = byRound(upcoming.filter(inWeek));
   $("#fixturesList").innerHTML = Object.keys(upRounds).map((r) => `
     <div class="round-label">${r}η αγωνιστική</div>
     ${upRounds[r].map((m) => {
@@ -106,7 +125,7 @@
         <div class="fx-team home">${esc(h.name)}${crest(h)}</div>
         <div class="fx-time">${fmtTime(dt)}</div>
         <div class="fx-team away">${crest(a)}${esc(a.name)}</div>
-        <div class="fx-pitch">${soon ? `<span class="badge">Επόμενο</span><br>` : ""}${esc(m.pitch)}</div>
+        <div class="fx-pitch">${soon ? `<span class="badge">Επόμενο</span><br>` : ""}${esc(groupName(m))}</div>
       </div>`;
     }).join("")}`).join("") || `<p class="block-note">Δεν υπάρχουν ματς αυτή την εβδομάδα.</p>`;
 
@@ -120,7 +139,7 @@
       const goalsOf = (id) => (m.goals || []).filter((g) => g[0] === id).sort((x, y) => x[2] - y[2])
         .map((g) => `<li>${esc(g[1])} ${g[2]}′</li>`).join("");
       return `<article class="card result">
-        <div class="result-top"><span>${fmtDay(dt)} · ${fmtTime(dt)}</span><span>${esc(m.pitch)}</span></div>
+        <div class="result-top"><span>${fmtDay(dt)} · ${fmtTime(dt)}</span><span>${esc(groupName(m))}</span></div>
         <div class="result-main">
           <div class="fx-team home ${hg > ag ? "win" : hg < ag ? "lose" : ""}">${esc(h.name)}${crest(h)}</div>
           <div class="score">${hg}-${ag}</div>
@@ -149,7 +168,7 @@
       <span class="rank">${i + 1}</span>
       <span class="who"><b>${esc(s.name)}</b><small>${esc(s.team.name)}</small></span>
       <span class="g"><span class="bar" style="width:${(s.g / maxG) * 60}px"></span>${s.g}</span>
-    </li>`).join("");
+    </li>`).join("") || `<li class="empty-row">Δεν έχουν μπει γκολ ακόμα.</li>`;
 
 
   /* ---------- News ---------- */
@@ -160,7 +179,7 @@
       <h3>${esc(n.title)}</h3>
       <p>${esc(n.body)}</p>
     </article>`;
-  }).join("");
+  }).join("") || `<p class="block-note">Δεν υπάρχουν ειδήσεις ακόμα — θα ανεβαίνουν εδώ μετά από κάθε αγωνιστική.</p>`;
 
   /* ---------- Teams & players (κάρτες τύπου FIFA) ---------- */
   const STATS = ["ΤΑΧ", "ΣΟΥ", "ΠΑΣ", "ΝΤΡ", "ΑΜΥ", "ΣΩΜ"];
@@ -198,17 +217,17 @@
 
   const rowOf = (id) => table.find((r) => r.team.id === id);
   $("#teamsList").innerHTML = L.teams.map((t) => {
-    const r = rowOf(t.id), pos = table.indexOf(r) + 1;
+    const r = rowOf(t.id), ovr = teamOvr(t);
     return `<button class="card team-card" data-team="${t.id}">
       ${crest(t, "lg")}
       <h3>${esc(t.name)}</h3>
-      <small>${esc(t.dept)}</small>
-      <div class="tc-stats"><span><b>${pos}η</b> θέση</span><span><b>${r.pts}</b> βαθ.</span><span><b>${teamOvr(t)}</b> rating</span></div>
+      <small>${esc(L.groups?.[t.group] || "")}</small>
+      <div class="tc-stats"><span><b>${r.gpos}η</b> θέση</span><span><b>${r.pts}</b> βαθ.</span>${ovr ? `<span><b>${ovr}</b> rating</span>` : ""}</div>
     </button>`;
   }).join("");
 
   const openTeam = (id) => {
-    const t = teamById[id], r = rowOf(id), pos = table.indexOf(r) + 1;
+    const t = teamById[id], r = rowOf(id), pos = r.gpos;
     const squad = playersOf(t);
     const ref = STATS.map((_, i) => avg(squad.map((p) => p.st[i])));
     const games = L.matches.filter((m) => m.home === id || m.away === id).sort((a, b) => d(a.date) - d(b.date));
@@ -233,16 +252,16 @@
       $("#tdRoster").querySelectorAll(".pmini").forEach((b) => b.setAttribute("aria-pressed", b.dataset.player == i));
     };
     $("#teamDialogBody").innerHTML = `
-      <div class="td-head">${crest(t, "xl")}<div><h3>${esc(t.name)}</h3><p>${esc(t.dept)}</p><p>Αρχηγός: ${esc(t.captain)}</p></div></div>
+      <div class="td-head">${crest(t, "xl")}<div><h3>${esc(t.name)}</h3><p>${esc(L.groups?.[t.group] || "")}${t.dept ? ` · ${esc(t.dept)}` : ""}</p>${t.captain ? `<p>Αρχηγός: ${esc(t.captain)}</p>` : ""}</div></div>
       <div class="td-stats">
-        <div><b>${pos}η</b><small>Θέση</small></div><div><b>${r.pts}</b><small>Βαθμοί</small></div>
-        <div><b>${r.w}-${r.dr}-${r.l}</b><small>Ν-Ι-Η</small></div><div><b>${teamOvr(t)}</b><small>Rating</small></div>
+        <div><b>${pos}η</b><small>Θέση ομίλου</small></div><div><b>${r.pts}</b><small>Βαθμοί</small></div>
+        <div><b>${r.w}-${r.dr}-${r.l}</b><small>Ν-Ι-Η</small></div><div><b>${teamOvr(t) || "–"}</b><small>Rating</small></div>
       </div>
       ${squad.length ? `<div class="td-sub">Ρόστερ</div>
       <div class="td-squad"><div class="td-player" id="tdPlayer"></div>
         <div class="td-roster" id="tdRoster">${squad.map((p, i) => `
           <button class="pmini ${tier(p.ovr)}" data-player="${i}"><b>${p.ovr}</b><span class="pm-pos">${p.pos}</span><span class="pm-name">${esc(p.name)}</span><span class="pm-num">${p.num}</span></button>`).join("")}
-        </div></div>` : ""}
+        </div></div>` : `<div class="td-sub">Ρόστερ</div><p class="td-empty">Το ρόστερ της ομάδας θα ανακοινωθεί σύντομα.</p>`}
       <div class="td-sub">Αγώνες</div>
       <ul class="td-list">${games.map(line).join("")}</ul>`;
     if (squad.length) {
