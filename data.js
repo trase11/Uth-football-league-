@@ -143,17 +143,17 @@ window.LEAGUE = {
     // 1η αγωνιστική · 23–29 Νοεμβρίου
     { round: 1, date: "2026-11-24T19:30", home: "A1", away: "A2", status: "upcoming" },
     { round: 1, date: "2026-11-24T21:00", home: "B1", away: "B2", status: "upcoming" },
-    { round: 1, date: "2026-11-26T21:00", home: "A3", away: "A4", status: "upcoming" },
-    { round: 1, date: "2026-11-27T21:00", home: "B3", away: "B4", status: "upcoming" },
+    { round: 1, date: "2026-11-26T21:00", home: "B3", away: "B4", status: "upcoming" },
+    { round: 1, date: "2026-11-27T21:00", home: "A3", away: "A4", status: "upcoming" },
     // 2η αγωνιστική · 30 Νοεμβρίου – 6 Δεκεμβρίου
     { round: 2, date: "2026-12-01T19:30", home: "A1", away: "A3", status: "upcoming" },
     { round: 2, date: "2026-12-01T21:00", home: "B1", away: "B3", status: "upcoming" },
     { round: 2, date: "2026-12-03T21:00", home: "A2", away: "A5", status: "upcoming" },
     { round: 2, date: "2026-12-04T21:00", home: "B2", away: "B5", status: "upcoming" },
     // 3η αγωνιστική · 7–13 Δεκεμβρίου
-    { round: 3, date: "2026-12-08T19:30", home: "A1", away: "A4", status: "upcoming" },
     { round: 3, date: "2026-12-08T21:00", home: "B1", away: "B4", status: "upcoming" },
     { round: 3, date: "2026-12-10T21:00", home: "A3", away: "A5", status: "upcoming" },
+    { round: 3, date: "2026-12-11T19:30", home: "A1", away: "A4", status: "upcoming" }, // μεταφέρθηκε από Τρι 08/12
     { round: 3, date: "2026-12-11T21:00", home: "B3", away: "B5", status: "upcoming" },
     // 4η αγωνιστική · 14–20 Δεκεμβρίου
     { round: 4, date: "2026-12-15T19:30", home: "A1", away: "A5", status: "upcoming" },
