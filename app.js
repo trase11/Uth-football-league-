@@ -191,26 +191,24 @@
   const goalsBy = {};
   for (const m of played) for (const [tid, name] of m.goals || []) goalsBy[tid + "|" + name] = (goalsBy[tid + "|" + name] || 0) + 1;
   // Παίκτης: "Όνομα" ή ["Όνομα", νούμερο, θέση, [6 στατιστικά]] ή
-  // { name, num, pos, ovr, title, st: [ΤΑΧ, ΣΟΥ, ΠΑΣ, ΝΤΡ, ΑΜΥ, ΣΩΜ] } — το ovr (1–999) το δίνει ο διοργανωτής,
-  // αλλιώς βγαίνει από τα στατιστικά ανάλογα με τη θέση.
+  // { name, num, pos, st: [ΤΑΧ, ΣΟΥ, ΠΑΣ, ΝΤΡ, ΑΜΥ, ΣΩΜ] } (1–99) — το rating βγαίνει από τα στατιστικά ανάλογα με τη θέση.
   const playersOf = (t) => (t.players || []).map((x) => {
     const o = typeof x === "string" ? { name: x } : Array.isArray(x) ? { name: x[0], num: x[1], pos: x[2], st: x[3] } : { ...x };
-    const st = Array.isArray(o.st) && o.st.length === 6 && o.st.every(Number.isFinite) ? o.st : null;
-    const calc = st ? Math.round(st.reduce((s, v, i) => s + v * (WEIGHTS[o.pos] || WEIGHTS.MF)[i], 0)) : 0;
+    const st = Array.isArray(o.st) && o.st.length === 6 && o.st.every(Number.isFinite) ? o.st.map((v) => Math.max(1, Math.min(99, Math.round(v)))) : null;
     return {
-      name: String(o.name), num: o.num || "", pos: o.pos || "", title: o.title || "", st,
-      ovr: Number.isFinite(o.ovr) && o.ovr > 0 ? Math.round(o.ovr) : calc,
+      name: String(o.name), num: o.num || "", pos: o.pos || "", st,
+      ovr: st ? Math.round(st.reduce((s, v, i) => s + v * (WEIGHTS[o.pos] || WEIGHTS.MF)[i], 0)) : 0,
       goals: goalsBy[t.id + "|" + o.name] || 0,
     };
   });
   const avg = (xs) => (xs.length ? Math.round(xs.reduce((a, b) => a + b, 0) / xs.length) : 0);
   const teamOvr = (t) => avg(playersOf(t).filter((p) => p.ovr).map((p) => p.ovr));
-  const tier = (o) => (o >= 100 ? "icon" : o >= 80 ? "gold" : o >= 70 ? "silver" : o >= 1 ? "bronze" : "uth");
+  const tier = (o) => (o >= 80 ? "gold" : o >= 70 ? "silver" : o >= 1 ? "bronze" : "uth");
 
   // Radar: παίκτης (γεμάτο) πάνω στον μέσο όρο της ομάδας (διακεκομμένο)
   const radar = (vals, ref) => {
     const R = 92, C = 130, ang = (i) => -Math.PI / 2 + (i * Math.PI) / 3;
-    const top = Math.max(100, ...vals, ...ref); // κλίμακα 0–100, ή μέχρι το μεγαλύτερο αν βάλετε 999
+    const top = 100;
     const pt = (v, i) => [C + (R * v / top) * Math.cos(ang(i)), C + (R * v / top) * Math.sin(ang(i))];
     const poly = (vs) => vs.map((v, i) => pt(v, i).map((n) => n.toFixed(1)).join(",")).join(" ");
     const rings = [.25, .5, .75, 1].map((k) => `<polygon class="rg" points="${poly(Array(6).fill(k * top))}"/>`).join("");
@@ -252,7 +250,6 @@
         <div class="fc-top"><b class="fc-ovr">${p.ovr || "–"}</b><span class="fc-pos">${esc(p.pos)}</span>${crest(t)}</div>
         ${p.num ? `<div class="fc-num">${esc(p.num)}</div>` : ""}
         <div class="fc-name">${esc(p.name)}</div>
-        ${p.title ? `<div class="fc-title">${esc(p.title)}</div>` : ""}
         <div class="fc-stats">${p.st
           ? STATS.map((l, i) => `<span><b>${p.st[i]}</b> ${l}</span>`).join("")
           : [[r.p, "ΑΓΩ"], [p.goals, "ΓΚΟΛ"], [r.p ? (p.goals / r.p).toFixed(1) : "0.0", "Γ/Α"], [`${r.gpos}η`, "ΘΕΣ"]].map(([v, l]) => `<span><b>${v}</b> ${l}</span>`).join("")}</div>
@@ -276,7 +273,7 @@
       ${squad.length ? `<div class="td-sub">Ρόστερ · ${squad.length} παίκτες</div>
       <div class="td-squad"><div class="td-player" id="tdPlayer"></div>
         <div class="td-roster" id="tdRoster">${squad.map((p, i) => `
-          <button class="pmini ${tier(p.ovr)}" data-player="${i}"><b>${p.ovr || "–"}</b><span class="pm-pos">${esc(p.title || p.pos)}</span><span class="pm-name">${esc(p.name)}</span>${p.num ? `<span class="pm-num">${esc(p.num)}</span>` : ""}</button>`).join("")}
+          <button class="pmini ${tier(p.ovr)}" data-player="${i}"><b>${p.ovr || "–"}</b><span class="pm-pos">${esc(p.pos)}</span><span class="pm-name">${esc(p.name)}</span>${p.num ? `<span class="pm-num">${esc(p.num)}</span>` : ""}</button>`).join("")}
         </div></div>` : `<div class="td-sub">Ρόστερ</div><p class="td-empty">Το ρόστερ της ομάδας θα ανακοινωθεί σύντομα.</p>`}
       <div class="td-sub">Αγώνες</div>
       <ul class="td-list">${games.map(line).join("")}</ul>`;
