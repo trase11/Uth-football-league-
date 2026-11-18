@@ -231,10 +231,6 @@ main { padding-bottom: 48px; counter-reset: sec; }
 .groups { display: grid; grid-template-columns: minmax(0, 1fr); gap: 22px; }
 .group-title { font-family: var(--font-head); font-weight: 900; text-transform: uppercase; letter-spacing: 2px; color: var(--sky); font-size: 14px; margin-bottom: 8px; }
 .empty-row { display: block !important; color: var(--muted); text-align: center; padding: 22px; font-size: 14px; }
-.td-names { list-style: none; margin: 6px 0 0; padding: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 18px; counter-reset: pl; }
-.td-names li { counter-increment: pl; display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--line); font-size: 14px; font-weight: 600; }
-.td-names li::before { content: counter(pl, decimal-leading-zero); font: 800 12px var(--font-head); color: var(--sky); min-width: 18px; }
-@media (max-width: 520px) { .td-names { grid-template-columns: minmax(0, 1fr); } }
 .td-empty { color: var(--muted); font-size: 14px; margin: 6px 0 0; }
 
 /* ---------- Fixtures ---------- */
@@ -407,6 +403,9 @@ main { padding-bottom: 48px; counter-reset: sec; }
 }
 .fcard.silver { --t1: #eef3f8; --t2: #8d9aab; --ink: #16202c; }
 .fcard.bronze { --t1: #f0c39a; --t2: #95592a; --ink: #2b1405; }
+.fcard.uth { --t1: #3a7be0; --t2: #0a2a6e; --ink: var(--ice); }
+.fcard.uth::after { content: ""; position: absolute; inset: 0; background: url("assets/centaur.jpg") 30% 20% / 260% auto; opacity: .18; mix-blend-mode: screen; pointer-events: none; }
+.fcard.uth > * { position: relative; z-index: 1; }
 .fc-top { display: flex; align-items: flex-start; gap: 8px; }
 .fc-ovr { font: 900 40px/0.9 var(--font-head); }
 .fc-pos { font: 800 14px var(--font-head); letter-spacing: 1px; margin-top: 4px; }
@@ -417,6 +416,9 @@ main { padding-bottom: 48px; counter-reset: sec; }
 .fc-stats b { font-size: 16px; font-weight: 900; display: inline-block; min-width: 22px; }
 .fc-foot { margin-top: 8px; font: 700 11px var(--font-head); text-transform: uppercase; letter-spacing: 1px; opacity: .75; }
 .td-radar { min-width: 0; }
+.td-radar-empty { display: flex; flex-direction: column; gap: 6px; justify-content: center; padding: 16px; border: 1px dashed var(--line-hi); align-self: stretch; }
+.td-radar-empty b { font: 900 18px var(--font-head); color: var(--ice); text-transform: uppercase; letter-spacing: .5px; }
+.td-radar-empty span { font-size: 13px; color: var(--muted); }
 .radar { width: 100%; max-width: 280px; display: block; margin: 0 auto; overflow: visible; }
 .radar .rg { fill: none; stroke: var(--line); stroke-width: 1; }
 .radar .rref { fill: none; stroke: var(--muted); stroke-width: 1.5; stroke-dasharray: 4 3; }
@@ -436,6 +438,7 @@ main { padding-bottom: 48px; counter-reset: sec; }
   padding: 7px 9px; border: 1px solid var(--line); border-left: 3px solid var(--tc); border-radius: var(--r);
   background: rgba(2,14,40,.5); color: var(--text); font: inherit; cursor: pointer; position: relative;
 }
+.pmini.uth { --tc: var(--sky); }
 .pmini.gold { --tc: #e2b64a; } .pmini.silver { --tc: #b9c4d2; } .pmini.bronze { --tc: #c98a55; }
 .pmini b { grid-row: span 2; font: 900 22px/1 var(--font-head); color: var(--tc); }
 .pm-pos { font: 800 10px var(--font-head); letter-spacing: 1px; color: var(--muted); }
