@@ -231,6 +231,10 @@ main { padding-bottom: 48px; counter-reset: sec; }
 .groups { display: grid; grid-template-columns: minmax(0, 1fr); gap: 22px; }
 .group-title { font-family: var(--font-head); font-weight: 900; text-transform: uppercase; letter-spacing: 2px; color: var(--sky); font-size: 14px; margin-bottom: 8px; }
 .empty-row { display: block !important; color: var(--muted); text-align: center; padding: 22px; font-size: 14px; }
+.td-names { list-style: none; margin: 6px 0 0; padding: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 18px; counter-reset: pl; }
+.td-names li { counter-increment: pl; display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--line); font-size: 14px; font-weight: 600; }
+.td-names li::before { content: counter(pl, decimal-leading-zero); font: 800 12px var(--font-head); color: var(--sky); min-width: 18px; }
+@media (max-width: 520px) { .td-names { grid-template-columns: minmax(0, 1fr); } }
 .td-empty { color: var(--muted); font-size: 14px; margin: 6px 0 0; }
 
 /* ---------- Fixtures ---------- */

@@ -190,13 +190,17 @@
   const POS = { GK: "Τερματοφύλακας", DF: "Αμυντικός", MF: "Μέσος", FW: "Επιθετικός" };
   const goalsBy = {};
   for (const m of played) for (const [tid, name] of m.goals || []) goalsBy[tid + "|" + name] = (goalsBy[tid + "|" + name] || 0) + 1;
-  const playersOf = (t) => (t.players || []).map(([name, num, pos, st]) => ({
-    name, num, pos, st,
-    ovr: Math.round(st.reduce((s, v, i) => s + v * (WEIGHTS[pos] || WEIGHTS.MF)[i], 0)),
-    goals: goalsBy[t.id + "|" + name] || 0,
-  }));
+  // Ένας παίκτης είναι είτε σκέτο όνομα ("Γιώργος Σαΐτης") είτε ["Όνομα", νούμερο, θέση, [6 στατιστικά]]
+  const playersOf = (t) => (t.players || []).map((x) => {
+    const [name, num, pos, st] = Array.isArray(x) ? x : [x];
+    return {
+      name, num, pos, st: Array.isArray(st) && st.length === 6 ? st : null,
+      ovr: Array.isArray(st) && st.length === 6 ? Math.round(st.reduce((s, v, i) => s + v * (WEIGHTS[pos] || WEIGHTS.MF)[i], 0)) : 0,
+      goals: goalsBy[t.id + "|" + name] || 0,
+    };
+  });
   const avg = (xs) => (xs.length ? Math.round(xs.reduce((a, b) => a + b, 0) / xs.length) : 0);
-  const teamOvr = (t) => avg(playersOf(t).map((p) => p.ovr));
+  const teamOvr = (t) => avg(playersOf(t).filter((p) => p.st).map((p) => p.ovr));
   const tier = (o) => (o >= 80 ? "gold" : o >= 70 ? "silver" : "bronze");
 
   // Radar: παίκτης (γεμάτο) πάνω στον μέσο όρο της ομάδας (διακεκομμένο)
@@ -229,7 +233,8 @@
   const openTeam = (id) => {
     const t = teamById[id], r = rowOf(id), pos = r.gpos;
     const squad = playersOf(t);
-    const ref = STATS.map((_, i) => avg(squad.map((p) => p.st[i])));
+    const rated = squad.length > 0 && squad.every((p) => p.st); // κάρτες FIFA μόνο όταν όλοι έχουν στατιστικά
+    const ref = rated ? STATS.map((_, i) => avg(squad.map((p) => p.st[i]))) : [];
     const games = L.matches.filter((m) => m.home === id || m.away === id).sort((a, b) => d(a.date) - d(b.date));
     const line = (m) => {
       const opp = teamById[m.home === id ? m.away : m.home];
@@ -255,16 +260,18 @@
       <div class="td-head">${crest(t, "xl")}<div><h3>${esc(t.name)}</h3><p>${esc(L.groups?.[t.group] || "")}${t.dept ? ` · ${esc(t.dept)}` : ""}</p>${t.captain ? `<p>Αρχηγός: ${esc(t.captain)}</p>` : ""}</div></div>
       <div class="td-stats">
         <div><b>${pos}η</b><small>Θέση ομίλου</small></div><div><b>${r.pts}</b><small>Βαθμοί</small></div>
-        <div><b>${r.w}-${r.dr}-${r.l}</b><small>Ν-Ι-Η</small></div><div><b>${teamOvr(t) || "–"}</b><small>Rating</small></div>
+        <div><b>${r.w}-${r.dr}-${r.l}</b><small>Ν-Ι-Η</small></div>${rated ? `<div><b>${teamOvr(t)}</b><small>Rating</small></div>` : `<div><b>${squad.length || "–"}</b><small>Παίκτες</small></div>`}
       </div>
-      ${squad.length ? `<div class="td-sub">Ρόστερ</div>
+      ${squad.length && !rated ? `<div class="td-sub">Ρόστερ · ${squad.length} παίκτες</div>
+      <ol class="td-names">${squad.map((p) => `<li>${esc(p.name)}${p.goals ? ` <span class="badge">${p.goals} γκολ</span>` : ""}</li>`).join("")}</ol>`
+      : squad.length ? `<div class="td-sub">Ρόστερ</div>
       <div class="td-squad"><div class="td-player" id="tdPlayer"></div>
         <div class="td-roster" id="tdRoster">${squad.map((p, i) => `
           <button class="pmini ${tier(p.ovr)}" data-player="${i}"><b>${p.ovr}</b><span class="pm-pos">${p.pos}</span><span class="pm-name">${esc(p.name)}</span><span class="pm-num">${p.num}</span></button>`).join("")}
         </div></div>` : `<div class="td-sub">Ρόστερ</div><p class="td-empty">Το ρόστερ της ομάδας θα ανακοινωθεί σύντομα.</p>`}
       <div class="td-sub">Αγώνες</div>
       <ul class="td-list">${games.map(line).join("")}</ul>`;
-    if (squad.length) {
+    if (rated) {
       showPlayer(squad.reduce((bi, p, i) => (p.ovr > squad[bi].ovr ? i : bi), 0));
       $("#tdRoster").addEventListener("click", (e) => { const b = e.target.closest(".pmini"); if (b) showPlayer(+b.dataset.player); });
     }
