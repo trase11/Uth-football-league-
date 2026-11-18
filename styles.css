@@ -421,19 +421,7 @@ main { padding-bottom: 48px; counter-reset: sec; }
 .pmini.icon { --tc: #c084fc; }
 .crowd-panel { display: flex; flex-direction: column; gap: 10px; padding: 14px; border: 1px solid var(--line); background: rgba(2,14,40,.45); align-self: stretch; }
 .cp-head { font: 800 12px var(--font-head); text-transform: uppercase; letter-spacing: 1.5px; color: var(--sky); }
-.cp-titles { display: flex; flex-wrap: wrap; gap: 6px; }
-.cp-chip { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border: 1px solid var(--line-hi); font: 800 13px var(--font-head); text-transform: uppercase; letter-spacing: .5px; }
-.cp-chip small { color: var(--gold); font-size: 11px; }
-.cp-chip button { background: none; border: 0; color: var(--muted); cursor: pointer; font-size: 11px; padding: 0; }
-.cp-chip button:hover { color: var(--loss); }
 .cp-empty { margin: 0; font-size: 13px; color: var(--muted); }
-.cp-form { display: grid; grid-template-columns: 76px 1fr; gap: 6px; }
-.cp-form input { font: 600 14px var(--font-body); color: var(--text); background: rgba(2,14,40,.6); border: 1px solid var(--line); border-radius: var(--r); padding: 8px 10px; min-width: 0; }
-.cp-form input[name="n"] { font: 900 18px var(--font-head); text-align: center; -moz-appearance: textfield; }
-.cp-form input::-webkit-outer-spin-button, .cp-form input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
-.cp-form input:focus { outline: none; border-color: var(--sky); }
-.cp-form button { grid-column: 1 / -1; font: 900 13px var(--font-head); text-transform: uppercase; letter-spacing: 1px; padding: 9px; border: 0; background: var(--gold); color: var(--bg-deep); cursor: pointer; clip-path: polygon(8px 0, 100% 0, calc(100% - 8px) 100%, 0 100%); }
-.cp-note { margin: 0; font-size: 12px; color: var(--loss); min-height: 1em; }
 .radar { width: 100%; max-width: 280px; display: block; margin: 0 auto; overflow: visible; }
 .radar .rg { fill: none; stroke: var(--line); stroke-width: 1; }
 .radar .rref { fill: none; stroke: var(--muted); stroke-width: 1.5; stroke-dasharray: 4 3; }

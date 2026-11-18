@@ -190,31 +190,36 @@
   const POS = { GK: "Τερματοφύλακας", DF: "Αμυντικός", MF: "Μέσος", FW: "Επιθετικός" };
   const goalsBy = {};
   for (const m of played) for (const [tid, name] of m.goals || []) goalsBy[tid + "|" + name] = (goalsBy[tid + "|" + name] || 0) + 1;
-  // Ένας παίκτης είναι είτε σκέτο όνομα ("Γιώργος Σαΐτης") είτε ["Όνομα", νούμερο, θέση, [6 στατιστικά]]
+  // Παίκτης: "Όνομα" ή ["Όνομα", νούμερο, θέση, [6 στατιστικά]] ή
+  // { name, num, pos, ovr, title, st: [ΤΑΧ, ΣΟΥ, ΠΑΣ, ΝΤΡ, ΑΜΥ, ΣΩΜ] } — το ovr (1–999) το δίνει ο διοργανωτής,
+  // αλλιώς βγαίνει από τα στατιστικά ανάλογα με τη θέση.
   const playersOf = (t) => (t.players || []).map((x) => {
-    const [name, num, pos, st] = Array.isArray(x) ? x : [x];
+    const o = typeof x === "string" ? { name: x } : Array.isArray(x) ? { name: x[0], num: x[1], pos: x[2], st: x[3] } : { ...x };
+    const st = Array.isArray(o.st) && o.st.length === 6 && o.st.every(Number.isFinite) ? o.st : null;
+    const calc = st ? Math.round(st.reduce((s, v, i) => s + v * (WEIGHTS[o.pos] || WEIGHTS.MF)[i], 0)) : 0;
     return {
-      name, num, pos, st: Array.isArray(st) && st.length === 6 ? st : null,
-      ovr: Array.isArray(st) && st.length === 6 ? Math.round(st.reduce((s, v, i) => s + v * (WEIGHTS[pos] || WEIGHTS.MF)[i], 0)) : 0,
-      goals: goalsBy[t.id + "|" + name] || 0,
+      name: String(o.name), num: o.num || "", pos: o.pos || "", title: o.title || "", st,
+      ovr: Number.isFinite(o.ovr) && o.ovr > 0 ? Math.round(o.ovr) : calc,
+      goals: goalsBy[t.id + "|" + o.name] || 0,
     };
   });
   const avg = (xs) => (xs.length ? Math.round(xs.reduce((a, b) => a + b, 0) / xs.length) : 0);
-  const teamOvr = (t) => avg(playersOf(t).filter((p) => p.st).map((p) => p.ovr));
-  const tier = (o) => (o >= 80 ? "gold" : o >= 70 ? "silver" : "bronze");
+  const teamOvr = (t) => avg(playersOf(t).filter((p) => p.ovr).map((p) => p.ovr));
+  const tier = (o) => (o >= 100 ? "icon" : o >= 80 ? "gold" : o >= 70 ? "silver" : o >= 1 ? "bronze" : "uth");
 
   // Radar: παίκτης (γεμάτο) πάνω στον μέσο όρο της ομάδας (διακεκομμένο)
   const radar = (vals, ref) => {
     const R = 92, C = 130, ang = (i) => -Math.PI / 2 + (i * Math.PI) / 3;
-    const pt = (v, i) => [C + (R * v / 100) * Math.cos(ang(i)), C + (R * v / 100) * Math.sin(ang(i))];
+    const top = Math.max(100, ...vals, ...ref); // κλίμακα 0–100, ή μέχρι το μεγαλύτερο αν βάλετε 999
+    const pt = (v, i) => [C + (R * v / top) * Math.cos(ang(i)), C + (R * v / top) * Math.sin(ang(i))];
     const poly = (vs) => vs.map((v, i) => pt(v, i).map((n) => n.toFixed(1)).join(",")).join(" ");
-    const rings = [25, 50, 75, 100].map((v) => `<polygon class="rg" points="${poly(Array(6).fill(v))}"/>`).join("");
-    const spokes = STATS.map((_, i) => { const [x, y] = pt(100, i); return `<line class="rg" x1="${C}" y1="${C}" x2="${x}" y2="${y}"/>`; }).join("");
+    const rings = [.25, .5, .75, 1].map((k) => `<polygon class="rg" points="${poly(Array(6).fill(k * top))}"/>`).join("");
+    const spokes = STATS.map((_, i) => { const [x, y] = pt(top, i); return `<line class="rg" x1="${C}" y1="${C}" x2="${x}" y2="${y}"/>`; }).join("");
     const labels = STATS.map((l, i) => {
-      const [x, y] = pt(122, i);
+      const [x, y] = pt(top * 1.22, i);
       return `<text x="${x}" y="${y}" text-anchor="middle" dominant-baseline="middle"><tspan class="rl">${l}</tspan><tspan class="rv" x="${x}" dy="14">${vals[i]}</tspan></text>`;
     }).join("");
-    const dots = vals.map((v, i) => { const [x, y] = pt(v, i); return `<circle class="rd" cx="${x}" cy="${y}" r="4"><title>${STATS[i]}: ${v} (μ.ο. ομάδας ${ref[i]})</title></circle>`; }).join("");
+    const dots = vals.map((v, i) => { const [x, y] = pt(v, i); return `<circle class="rd" cx="${x}" cy="${y}" r="4"><title>${STATS[i]}: ${v} (μ.ο. ομάδας ${ref[i] || "–"})</title></circle>`; }).join("");
     return `<svg class="radar" viewBox="-20 -10 300 290" role="img" aria-label="Στατιστικά: ${STATS.map((l, i) => `${l} ${vals[i]}`).join(", ")}">
       ${rings}${spokes}<polygon class="rref" points="${poly(ref)}"/><polygon class="rp" points="${poly(vals)}"/>${dots}${labels}</svg>`;
   };
@@ -230,18 +235,11 @@
     </button>`;
   }).join("");
 
-  let current = null; // { id, sel } της ανοιχτής ομάδας
-  const crowdTier = (n) => (n >= 100 ? "icon" : n >= 80 ? "gold" : n >= 70 ? "silver" : n >= 1 ? "bronze" : "uth");
-  const openTeam = (id, sel) => {
+  const openTeam = (id) => {
     const t = teamById[id], r = rowOf(id), pos = r.gpos;
     const squad = playersOf(t);
     const withStats = squad.filter((p) => p.st);
     const ref = STATS.map((_, i) => avg(withStats.map((p) => p.st[i])));
-    const R = window.UTH_RATINGS;
-    // Rating: από στατιστικά αν υπάρχουν, αλλιώς από τις ψήφους της κερκίδας
-    const crowd = (p) => R?.get(t.id + "|" + p.name) || { avg: 0, votes: 0, titles: [], title: "", mine: null };
-    const ratingOf = (p) => (p.st ? p.ovr : crowd(p).avg);
-    const tierOf = (p) => (p.st ? tier(p.ovr) : crowdTier(crowd(p).avg));
     const games = L.matches.filter((m) => m.home === id || m.away === id).sort((a, b) => d(a.date) - d(b.date));
     const line = (m) => {
       const opp = teamById[m.home === id ? m.away : m.home];
@@ -249,78 +247,45 @@
       const res = m.status === "played" ? `${m.score[0]}-${m.score[1]}` : `${fmtDay(d(m.date))} ${fmtTime(d(m.date))}`;
       return `<li><span>${vs} ${esc(opp.name)}</span><span>${res}</span></li>`;
     };
-    const big = (p) => {
-      const c = crowd(p);
-      return `
-      <div class="fcard ${tierOf(p)}">
-        <div class="fc-top"><b class="fc-ovr">${ratingOf(p) || "–"}</b><span class="fc-pos">${esc(p.pos || "")}</span>${crest(t)}</div>
-        ${p.num ? `<div class="fc-num">${p.num}</div>` : ""}
+    const big = (p) => `
+      <div class="fcard ${tier(p.ovr)}">
+        <div class="fc-top"><b class="fc-ovr">${p.ovr || "–"}</b><span class="fc-pos">${esc(p.pos)}</span>${crest(t)}</div>
+        ${p.num ? `<div class="fc-num">${esc(p.num)}</div>` : ""}
         <div class="fc-name">${esc(p.name)}</div>
-        ${!p.st && c.title ? `<div class="fc-title">${esc(c.title)}</div>` : ""}
+        ${p.title ? `<div class="fc-title">${esc(p.title)}</div>` : ""}
         <div class="fc-stats">${p.st
           ? STATS.map((l, i) => `<span><b>${p.st[i]}</b> ${l}</span>`).join("")
           : [[r.p, "ΑΓΩ"], [p.goals, "ΓΚΟΛ"], [r.p ? (p.goals / r.p).toFixed(1) : "0.0", "Γ/Α"], [`${r.gpos}η`, "ΘΕΣ"]].map(([v, l]) => `<span><b>${v}</b> ${l}</span>`).join("")}</div>
-        <div class="fc-foot">${p.st ? `${POS[p.pos] || esc(p.pos || "")} · ${p.goals} γκολ` : c.votes ? `${c.votes} ${c.votes === 1 ? "ψήφος" : "ψήφοι"} κερκίδας` : esc(t.name)}</div>
+        <div class="fc-foot">${[POS[p.pos] || p.pos, `${p.goals} γκολ`].filter(Boolean).map(esc).join(" · ")}</div>
       </div>`;
-    };
-    const crowdPanel = (p) => {
-      const c = crowd(p);
-      const can = R?.ready && R.canWrite;
-      return `<div class="td-radar crowd-panel">
-        <div class="cp-head">Rating κερκίδας</div>
-        ${c.titles.length ? `<div class="cp-titles">${c.titles.map((x) => `<span class="cp-chip">${esc(x.t)} <small>${x.c}</small>${R?.isOwner ? `<button type="button" data-hide="${esc(x.t)}" aria-label="Απόκρυψη τίτλου">✕</button>` : ""}</span>`).join("")}</div>`
-          : `<p class="cp-empty">${c.votes ? "Κανένας τίτλος ακόμα." : "Κανείς δεν τον έχει βαθμολογήσει ακόμα."}</p>`}
-        ${can ? `<form class="cp-form" data-key="${esc(t.id + "|" + p.name)}">
-          <input name="n" type="number" min="1" max="999" inputmode="numeric" placeholder="1–999" value="${c.mine ? c.mine.n : ""}" aria-label="Rating" required>
-          <input name="t" maxlength="16" placeholder="Τίτλος (π.χ. Παιδαράς)" value="${c.mine ? esc(c.mine.t) : ""}" aria-label="Τίτλος">
-          <button type="submit">${c.mine ? "Αλλαγή" : "Ψήφισε"}</button>
-        </form><p class="cp-note" id="cpNote"></p>`
-          : `<p class="cp-empty">${R?.ready ? "Δεν έχεις δικαίωμα ψήφου σε αυτή τη σελίδα." : "Η βαθμολόγηση γίνεται στην κοινή έκδοση του site."}</p>`}
-      </div>`;
-    };
     const showPlayer = (i) => {
       const p = squad[i];
-      current = { id, sel: i };
       $("#tdPlayer").innerHTML = big(p) + (p.st
         ? `<div class="td-radar">${radar(p.st, ref)}
           <div class="radar-key"><span class="k-p"></span>${esc(p.name)} <span class="k-r"></span>Μ.Ο. ομάδας</div></div>`
-        : crowdPanel(p));
+        : `<div class="td-radar crowd-panel"><div class="cp-head">Ικανότητες</div>
+          <p class="cp-empty">Το διάγραμμα εμφανίζεται μόλις μπουν τα στατιστικά του παίκτη.</p></div>`);
       $("#tdRoster").querySelectorAll(".pmini").forEach((b) => b.setAttribute("aria-pressed", b.dataset.player == i));
     };
     $("#teamDialogBody").innerHTML = `
       <div class="td-head">${crest(t, "xl")}<div><h3>${esc(t.name)}</h3><p>${esc(L.groups?.[t.group] || "")}${t.dept ? ` · ${esc(t.dept)}` : ""}</p>${t.captain ? `<p>Αρχηγός: ${esc(t.captain)}</p>` : ""}</div></div>
       <div class="td-stats">
         <div><b>${pos}η</b><small>Θέση ομίλου</small></div><div><b>${r.pts}</b><small>Βαθμοί</small></div>
-        <div><b>${r.w}-${r.dr}-${r.l}</b><small>Ν-Ι-Η</small></div>${withStats.length ? `<div><b>${teamOvr(t)}</b><small>Rating</small></div>` : `<div><b>${squad.length || "–"}</b><small>Παίκτες</small></div>`}
+        <div><b>${r.w}-${r.dr}-${r.l}</b><small>Ν-Ι-Η</small></div>${teamOvr(t) ? `<div><b>${teamOvr(t)}</b><small>Rating</small></div>` : `<div><b>${squad.length || "–"}</b><small>Παίκτες</small></div>`}
       </div>
       ${squad.length ? `<div class="td-sub">Ρόστερ · ${squad.length} παίκτες</div>
       <div class="td-squad"><div class="td-player" id="tdPlayer"></div>
         <div class="td-roster" id="tdRoster">${squad.map((p, i) => `
-          <button class="pmini ${tierOf(p)}" data-player="${i}"><b>${ratingOf(p) || "–"}</b><span class="pm-pos">${esc(p.pos || crowd(p).title || "")}</span><span class="pm-name">${esc(p.name)}</span>${p.num ? `<span class="pm-num">${p.num}</span>` : ""}</button>`).join("")}
+          <button class="pmini ${tier(p.ovr)}" data-player="${i}"><b>${p.ovr || "–"}</b><span class="pm-pos">${esc(p.title || p.pos)}</span><span class="pm-name">${esc(p.name)}</span>${p.num ? `<span class="pm-num">${esc(p.num)}</span>` : ""}</button>`).join("")}
         </div></div>` : `<div class="td-sub">Ρόστερ</div><p class="td-empty">Το ρόστερ της ομάδας θα ανακοινωθεί σύντομα.</p>`}
       <div class="td-sub">Αγώνες</div>
       <ul class="td-list">${games.map(line).join("")}</ul>`;
-    if (squad.length) { // ξεκίνα από τον επιλεγμένο, αλλιώς τον καλύτερο
-      showPlayer(Number.isInteger(sel) && squad[sel] ? sel : squad.reduce((bi, p, i) => (ratingOf(p) * 100 + p.goals > ratingOf(squad[bi]) * 100 + squad[bi].goals ? i : bi), 0));
+    if (squad.length) { // ξεκίνα από τον καλύτερο (rating, αλλιώς γκολ)
+      showPlayer(squad.reduce((bi, p, i) => (p.ovr * 100 + p.goals > squad[bi].ovr * 100 + squad[bi].goals ? i : bi), 0));
       $("#tdRoster").addEventListener("click", (e) => { const b = e.target.closest(".pmini"); if (b) showPlayer(+b.dataset.player); });
-      $("#tdPlayer").addEventListener("submit", async (e) => {
-        e.preventDefault();
-        const f = e.target.closest(".cp-form");
-        if (!f) return;
-        const res = await R.vote(f.dataset.key, f.elements.n.value, f.elements.t.value);
-        if (res.error) { const note = $("#cpNote"); if (note) note.textContent = res.error; return; }
-        document.activeElement?.blur();
-        openTeam(current.id, current.sel); // δείξε αμέσως τη νέα βαθμολογία
-      });
-      $("#tdPlayer").addEventListener("click", (e) => { const b = e.target.closest("[data-hide]"); if (b) R?.hideTitle(b.dataset.hide); });
     }
-    if (!$("#teamDialog").open) $("#teamDialog").showModal();
+    $("#teamDialog").showModal();
   };
-  // Νέες ψήφοι: ξαναζωγράφισε την ανοιχτή ομάδα (όχι ενώ κάποιος γράφει)
-  document.addEventListener("uth:ratings", () => {
-    if (current && $("#teamDialog").open && !document.activeElement?.closest?.(".cp-form")) openTeam(current.id, current.sel);
-  });
-  $("#teamDialog").addEventListener("close", () => { current = null; });
   document.addEventListener("click", (e) => {
     const el = e.target.closest("[data-team]");
     if (el) openTeam(el.dataset.team);
